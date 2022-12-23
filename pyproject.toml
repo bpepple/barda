@@ -39,7 +39,7 @@ multi_line_output = 3
 line_length = 95
 default_section = "THIRDPARTY"
 known_first_party = []
-known_third_party = ["darkseid", "xdg"]
+known_third_party = ["darkseid", "pytest", "xdg"]
 
 [tool.coverage.run]
 source = ["barda"]

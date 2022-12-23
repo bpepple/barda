@@ -10,11 +10,28 @@ readme = "README.md"
 python = "^3.11"
 mokkari = "^2.3.3"
 darkseid = "^2.0.1"
+pyxdg = "^0.28"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
+pre-commit = "^2.20.0"
+flake8 = "^6.0.0"
+flake8-builtins = "^2.1.0"
+flake8-blind-except = "^0.2.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 95
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 95
+default_section = "THIRDPARTY"
+known_first_party = []
+known_third_party = []

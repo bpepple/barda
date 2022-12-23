@@ -19,6 +19,8 @@ pre-commit = "^2.20.0"
 flake8 = "^6.0.0"
 flake8-builtins = "^2.1.0"
 flake8-blind-except = "^0.2.1"
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -35,3 +37,9 @@ line_length = 95
 default_section = "THIRDPARTY"
 known_first_party = []
 known_third_party = ["xdg"]
+
+[tool.coverage.run]
+source = ["barda"]
+
+[tool.coverage.report]
+show_missing = true

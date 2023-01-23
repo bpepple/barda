@@ -9,7 +9,6 @@ def make_parser():
         description="Read in a file or set of files, and return the result.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("path", nargs="+", help="Path of a file or a folder of files.")
     parser.add_argument(
         "--version",
         action="version",

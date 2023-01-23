@@ -25,7 +25,6 @@ class BardaSettings:
     def __init__(self, config_dir: Optional[str] = None) -> None:
         self.metron_user: str = ""
         self.metron_password: str = ""
-        self.path: str = ""
 
         self.config = configparser.ConfigParser()
 

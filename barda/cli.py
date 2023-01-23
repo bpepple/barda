@@ -12,11 +12,7 @@ def get_args() -> Namespace:
 
 
 def get_configs(opts: Namespace) -> BardaSettings:
-    config = BardaSettings()
-    if opts.path:
-        config.path = opts.path
-
-    return config
+    return BardaSettings()
 
 
 def main():

@@ -1,6 +1,14 @@
+from enum import Enum, auto, unique
+
 import questionary
 
 from barda.settings import BardaSettings
+
+
+@unique
+class SourceType(Enum):
+    ComicVine = auto()
+    LoCG = auto()
 
 
 class Runner:
@@ -8,6 +16,21 @@ class Runner:
 
     def __init__(self, config: BardaSettings) -> None:
         self.config = config
+
+    @staticmethod
+    def _what_task():
+        choices = []
+        for source in SourceType:
+            choice = questionary.Choice(title=f"{source.name}", value=source.value)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="Quit", value="q"))
+        result = questionary.select("Choose what task you want to do", choices=choices).ask()
+
+        if result != "q":
+            return result
+
+        print("Quiting...")
+        exit(0)
 
     def _has_cv_credentials(self) -> bool:
         return bool(self.config.cv_api_key)
@@ -48,3 +71,12 @@ class Runner:
         if not self._has_cv_credentials() and not self._get_cv_credentials():
             questionary.print("No Comic Vine credentials were provided. Exiting...")
             exit(0)
+
+        task = self._what_task()
+        match task:
+            case SourceType.ComicVine.value:
+                print("Going to import from Comic Vine...")
+            case SourceType.LoCG.value:
+                print("Going to import from League of Comic Geeks...")
+            case _:
+                print("Invalid choice.")

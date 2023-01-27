@@ -10,9 +10,9 @@ from typing import List, Optional, TypedDict
 from xdg.BaseDirectory import save_config_path
 
 
-class ComicVine(TypedDict):
+class ResourceKeys(TypedDict):
     cv: int
-    metron: str
+    metron: int
 
 
 class BardaSettings:
@@ -35,18 +35,19 @@ class BardaSettings:
         self.cv_api_key: Optional[str] = None
 
         # Resource key files
-        self.creator: Optional[List[ComicVine]] = None
-        self.characters: Optional[List[ComicVine]] = None
-        self.teams: Optional[List[ComicVine]] = None
+        self.creator: Optional[List[ResourceKeys]] = None
+        self.characters: Optional[List[ResourceKeys]] = None
+        self.teams: Optional[List[ResourceKeys]] = None
 
         self.config = configparser.ConfigParser()
 
         # setting & json file locations
         folder = Path(config_dir) if config_dir else BardaSettings.get_settings_folder()
         self.settings_file = folder / "settings.ini"
-        self.creators_file = folder / "creator.json"
+        self.creators_file = folder / "creators.json"
         self.characters_file = folder / "characters.json"
         self.teams_file = folder / "teams.json"
+        self.cv_cache = folder / "cv.sql"
 
         if not self.settings_file.parent.exists():
             self.settings_file.parent.mkdir()

@@ -41,7 +41,7 @@ multi_line_output = 3
 line_length = 95
 default_section = "THIRDPARTY"
 known_first_party = []
-known_third_party = ["pytest", "questionary", "xdg"]
+known_third_party = ["bs4", "mokkari", "pytest", "questionary", "simyan", "titlecase", "xdg"]
 
 [tool.coverage.run]
 source = ["barda"]

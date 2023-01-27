@@ -2,6 +2,7 @@ from enum import Enum, auto, unique
 
 import questionary
 
+from barda.comic_vine import ComicVine
 from barda.settings import BardaSettings
 
 
@@ -75,7 +76,9 @@ class Runner:
         task = self._what_task()
         match task:
             case SourceType.ComicVine.value:
-                print("Going to import from Comic Vine...")
+                if self.config.cv_api_key:
+                    cv = ComicVine(self.config)
+                    cv.run()
             case SourceType.LoCG.value:
                 print("Going to import from League of Comic Geeks...")
             case _:

@@ -225,7 +225,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "mokkari"
-version = "3.0.0"
+version = "2.3.3"
 description = "Python wrapper for Metron API"
 category = "main"
 optional = false
@@ -238,10 +238,6 @@ requests = ">=2.26.0,<3.0.0"
 
 [package.extras]
 docs = ["sphinx-rtd-theme (>=0.5.2,<0.6.0)", "sphinxcontrib-napoleon (>=0.7,<0.8)"]
-
-[package.source]
-type = "file"
-url = "dist/mokkari-3.0.0-py3-none-any.whl"
 
 [[package]]
 name = "mypy-extensions"
@@ -433,7 +429,7 @@ python-versions = "*"
 
 [[package]]
 name = "requests"
-version = "2.28.1"
+version = "2.28.2"
 description = "Python HTTP for Humans."
 category = "main"
 optional = false
@@ -441,7 +437,7 @@ python-versions = ">=3.7, <4"
 
 [package.dependencies]
 certifi = ">=2017.4.17"
-charset-normalizer = ">=2,<3"
+charset-normalizer = ">=2,<4"
 idna = ">=2.5,<4"
 urllib3 = ">=1.21.1,<1.27"
 
@@ -556,7 +552,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "3472559fa1ba3affa6dc7d98335858cd4b11cae00b2f8c092b50228ab37f5285"
+content-hash = "420b8aa1c8a56f5b5c4443751e1de2e9e47d8fd8d63bef72cd626f6780bbdebd"
 
 [metadata.files]
 attrs = [
@@ -697,7 +693,8 @@ mccabe = [
     {file = "mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325"},
 ]
 mokkari = [
-    {file = "mokkari-3.0.0-py3-none-any.whl", hash = "sha256:260efb2f64ca245049aa1a916d5aebb64f863ecdcb7c7932c0dfb87a735018bf"},
+    {file = "mokkari-2.3.3-py3-none-any.whl", hash = "sha256:4afe4e315af4ce11b1c5e67df12fd37a5922297bb3f4b5e0ea0d25aca99c7c9d"},
+    {file = "mokkari-2.3.3.tar.gz", hash = "sha256:95b5cd6722248bbdd3960afc17e354f45c0fe35333ecbe7bf014acb5b0952117"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
@@ -839,8 +836,8 @@ ratelimit = [
     {file = "ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
 ]
 requests = [
-    {file = "requests-2.28.1-py3-none-any.whl", hash = "sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349"},
-    {file = "requests-2.28.1.tar.gz", hash = "sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983"},
+    {file = "requests-2.28.2-py3-none-any.whl", hash = "sha256:64299f4909223da747622c030b781c0d7811e359c37124b4bd368fb8c6518baa"},
+    {file = "requests-2.28.2.tar.gz", hash = "sha256:98b1b2782e3c6c4904938b84c0eb932721069dfdb9134313beff7c83c2df24bf"},
 ]
 setuptools = [
     {file = "setuptools-65.6.3-py3-none-any.whl", hash = "sha256:57f6f22bde4e042978bcd50176fdb381d7c21a9efa4041202288d3737a0c6a54"},

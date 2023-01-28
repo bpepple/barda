@@ -8,12 +8,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-mokkari = {path = "dist/mokkari-3.0.0-py3-none-any.whl"}
 pyxdg = "^0.28"
 questionary = "^1.10.0"
 simyan = "^0.13.0"
 titlecase = "^2.4"
 bs4 = "^0.0.1"
+requests = "^2.28.2"
+ratelimit = "^2.2.1"
+mokkari = "^2.3.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
@@ -41,7 +43,7 @@ multi_line_output = 3
 line_length = 95
 default_section = "THIRDPARTY"
 known_first_party = []
-known_third_party = ["bs4", "mokkari", "pytest", "questionary", "simyan", "titlecase", "xdg"]
+known_third_party = ["bs4", "mokkari", "pytest", "questionary", "ratelimit", "requests", "simyan", "titlecase", "xdg"]
 
 [tool.coverage.run]
 source = ["barda"]

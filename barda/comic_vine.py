@@ -1,21 +1,24 @@
 import json
 from enum import Enum, unique
+from pathlib import Path
 from typing import List
 
 import questionary
+import requests
 from mokkari import api as m_api
-from mokkari.character import CharactersList, PostCharacter
-from mokkari.issue import PostIssue
+from mokkari.character import CharactersList
 from mokkari.publisher import PublishersList
-from mokkari.series import PostSeries, SeriesTypeList
+from mokkari.series import SeriesTypeList
 from mokkari.session import Session
-from mokkari.team import PostTeam, TeamsList
+from mokkari.team import TeamsList
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
 from simyan.schemas.generic_entries import GenericEntry
 from simyan.sqlite_cache import SQLiteCache
 from titlecase import titlecase
 
+from barda.exceptions import ApiError
+from barda.post_data import PostData
 from barda.settings import BardaSettings, ResourceKeys
 from barda.styles import Styles
 from barda.utils import cleanup_html
@@ -35,8 +38,17 @@ class ComicVine:
         self.config = config
         cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
         # Christ! What a horrible design...
-        self.session = CV(api_key=config.cv_api_key, cache=cache)  # type: ignore
+        self.simyan = CV(api_key=config.cv_api_key, cache=cache)  # type: ignore
         self.mokkari: Session = m_api(config.metron_user, config.metron_password)
+        self.barda = PostData(config.metron_user, config.metron_password)
+
+    @staticmethod
+    def _get_image(url: str):
+        receive = requests.get(url)
+        cv = Path(url)
+        img_file = Path("/tmp") / cv.name
+        img_file.write_bytes(receive.content)
+        return img_file
 
     @staticmethod
     def _fix_title_data(title: str | None) -> List[str]:
@@ -77,21 +89,23 @@ class ComicVine:
             self.config.teams_file.write_text(json.dumps(self.config.teams, indent=4))
             questionary.print(f"Added '{name}' to team  keyfile", style=Styles.SUCCESS)
 
-    def _create_team(self, team: GenericEntry) -> int:
+    def _create_team(self, cv_id: int) -> int:
+        cv_data = self.simyan.team(cv_id)
         questionary.print(
-            f"Team '{team.name}' needs to be created on Metron",
+            f"Team '{cv_data.name}' needs to be created on Metron",
             style=Styles.TITLE,
         )
         name = (
-            team.name
-            if questionary.confirm(f"Is '{team.name}' the correct name?").ask()
+            cv_data.name
+            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
             else questionary.text("What should the team name be?").ask()
         )
-        desc = questionary.text("What is the summary description for this team?").ask()
-        t = PostTeam(name=name, desc=desc, creators=[])
-        new_team = self.mokkari.post_team(t)
-        self._add_team_to_keyfile(team.id_, new_team.id, new_team.name)  # type: ignore
-        return new_team.id  # type: ignore
+        desc = questionary.text("What should be the description for this team?").ask()
+        img = self._get_image(cv_data.image.original)
+        data = {"name": name, "desc": desc, "image": img, "creators": []}
+        resp = self.barda.post_team(data)
+        self._add_team_to_keyfile(cv_data.team_id, resp["id"], resp["name"])
+        return resp["id"]
 
     def _choose_team(self, team: GenericEntry) -> int | None:
         if team.name:
@@ -104,7 +118,7 @@ class ComicVine:
                 choices.append(choice)
             choices.append(questionary.Choice(title="None", value=""))
             if metron_id := questionary.select(
-                "What team should be added?", choices=choices
+                f"What team should be added for '{team.name}'?", choices=choices
             ).ask():
                 self._add_team_to_keyfile(team.id_, metron_id, team.name)
                 return metron_id
@@ -116,7 +130,7 @@ class ComicVine:
         if metron_id is not None:
             return metron_id
         else:
-            metron_id = self._create_team(team)
+            metron_id = self._create_team(team.id_)
 
         return metron_id
 
@@ -152,20 +166,33 @@ class ComicVine:
             )
             questionary.print(f"Added '{name}' to character keyfile", style=Styles.SUCCESS)
 
-    def _create_character(self, character: GenericEntry) -> int:
+    def _create_character(self, cv_id: int) -> int:
+        cv_data = self.simyan.character(cv_id)
         questionary.print(
-            f"Charcater '{character.name}' needs to be created on Metron",
+            f"Character '{cv_data.name}' needs to be created on Metron",
             style=Styles.TITLE,
         )
         name = (
-            character.name
-            if questionary.confirm(f"Is '{character.name}' the correct name?").ask()
+            cv_data.name
+            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
             else questionary.text("What should the characters name be?").ask()
         )
-        c = PostCharacter(name=name, alias=[])
-        new_character = self.mokkari.post_character(c)
-        self._add_character_to_keyfile(character.id_, new_character.id, new_character.name)  # type: ignore
-        return new_character.id  # type: ignore
+        desc = questionary.text(
+            "What description do you want to have for this character?"
+        ).ask()
+        image = self._get_image(cv_data.image.original)
+        teams_lst = self._create_team_list(cv_data.teams)
+        data = {
+            "name": name,
+            "alias": [],
+            "desc": desc,
+            "image": str(image),
+            "teams": teams_lst,
+            "creators": [],
+        }
+        resp = self.barda.post_character(data)
+        self._add_character_to_keyfile(cv_data.character_id, resp["id"], resp["name"])
+        return resp["id"]
 
     def _choose_character(self, character: GenericEntry) -> int | None:
         if character.name:
@@ -180,7 +207,7 @@ class ComicVine:
                 choices.append(choice)
             choices.append(questionary.Choice(title="None", value=""))
             if metron_id := questionary.select(
-                "What character should be added?", choices=choices
+                f"What character should be added for '{character.name}'?", choices=choices
             ).ask():
                 self._add_character_to_keyfile(character.id_, metron_id, character.name)
                 return metron_id
@@ -192,7 +219,7 @@ class ComicVine:
         if metron_id is not None:
             return metron_id
         else:
-            metron_id = self._create_character(character)
+            metron_id = self._create_character(character.id_)
 
         return metron_id
 
@@ -230,7 +257,7 @@ class ComicVine:
     def _what_series(self) -> VolumeEntry | None:
         series = questionary.text("What series do you want to import?").ask()
         if not (
-            results := self.session.volume_list(
+            results := self.simyan.volume_list(
                 params={
                     "filter": f"name:{series}",
                 }
@@ -270,6 +297,7 @@ class ComicVine:
             questionary.text(f"What is the volume number for '{display_name}'?").ask()
         )
         publisher_id = self._choose_publisher()
+        series_type_id = self._choose_series_type()
         year_began = (
             cv_series.start_year
             if questionary.confirm(
@@ -277,7 +305,6 @@ class ComicVine:
             ).ask()
             else int(questionary.text("What begin year should be used for this series?").ask())
         )
-        series_type_id = self._choose_series_type()
         if series_type_id == 2:
             year_end = int(questionary.text("What year did this series end in?").ask())
         else:
@@ -286,52 +313,58 @@ class ComicVine:
             f"Do you want to add a series summary for '{display_name}'?"
         ).ask()
 
-        # TODO: Add genres & associated series.
+        data = {
+            "name": series_name,
+            "sort_name": sort_name,
+            "volume": volume,
+            "desc": desc,
+            "series_type": series_type_id,
+            "publisher": publisher_id,
+            "year_began": year_began,
+            "year_end": year_end,
+            "genres": [],
+            "associated": [],
+        }
 
-        series = PostSeries(
-            name=series_name,
-            sort_name=sort_name,
-            volume=volume,
-            desc=desc,
-            series_type=series_type_id,
-            publisher=publisher_id,
-            year_began=year_began,
-            year_end=year_end,
-            genres=[],
-            associated=[],
-        )
-        new_series = self.mokkari.post_series(series)
-        return new_series.id  # type: ignore
+        try:
+            new_series = self.barda.post_series(data)
+        except ApiError as e:
+            questionary.print(f"API Error: {e}", style=Styles.ERROR)
+            exit(0)
+
+        return new_series["id"]
 
     # Issue
-    def _create_issue(self, series_id: int, cv_issue: Issue) -> PostIssue:
+    def _create_issue(self, series_id: int, cv_issue: Issue):
         stories = self._fix_title_data(cv_issue.name)
         cleaned_desc = cleanup_html(cv_issue.description, True)
         character_lst = self._create_character_list(cv_issue.characters)
         team_lst = self._create_team_list(cv_issue.teams)
-        data = PostIssue(
-            series=series_id,
-            number=cv_issue.number,
-            story_titles=stories,
-            cover_date=cv_issue.cover_date,
-            store_date=cv_issue.store_date,
-            desc=cleaned_desc,
-            characters=character_lst,
-            teams=team_lst,
-        )
-        return self.mokkari.post_issue(data)
+        img = self._get_image(cv_issue.image.original)
+        data = {
+            "series": series_id,
+            "number": cv_issue.number,
+            "name": stories,
+            "cover_date": cv_issue.cover_date,
+            "store_date": cv_issue.store_date,
+            "desc": cleaned_desc,
+            "image": str(img),
+            "characters": character_lst,
+            "teams": team_lst,
+        }
+        return self.barda.post_issue(data)
 
     def run(self) -> None:
         if series := self._what_series():
             new_series_id = self._create_series(series)
 
-            if i_list := self.session.issue_list(
+            if i_list := self.simyan.issue_list(
                 params={"filter": f"volume:{series.volume_id}"}
             ):
                 for i in i_list:
-                    cv_issue = self.session.issue(i.issue_id)
+                    cv_issue = self.simyan.issue(i.issue_id)
                     new_issue = self._create_issue(new_series_id, cv_issue)
-                    questionary.print(f"Added issue #{new_issue.number}", Styles.SUCCESS)  # type: ignore
+                    questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)  # type: ignore
 
         else:
             print("Nothing found")

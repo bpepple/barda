@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from enum import Enum, unique
 from pathlib import Path
 from typing import List
@@ -6,11 +7,13 @@ from typing import List
 import questionary
 import requests
 from mokkari import api as m_api
+from mokkari.arc import ArcsList
 from mokkari.character import CharactersList
 from mokkari.publisher import PublishersList
 from mokkari.series import SeriesTypeList
 from mokkari.session import Session
 from mokkari.team import TeamsList
+from PIL import Image
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
 from simyan.schemas.generic_entries import GenericEntry
@@ -60,11 +63,21 @@ class ComicVine:
             return orig_date
 
     @staticmethod
-    def _get_image(url: str):
+    def _resize_img(img: Path) -> None:
+        width = 600
+        height = 923
+        i = Image.open(img)
+        i = i.resize((width, height), Image.Resampling.LANCZOS)
+        i.save(img)
+
+    def _get_image(self, url: str):
         receive = requests.get(url)
         cv = Path(url)
-        img_file = Path("/tmp") / cv.name
+        extension = cv.suffix
+        new_fn = f"{uuid.uuid4().hex}{extension}"
+        img_file = Path("/tmp") / new_fn
         img_file.write_bytes(receive.content)
+        self._resize_img(img_file)
         return img_file
 
     @staticmethod
@@ -86,6 +99,67 @@ class ComicVine:
 
         return result
 
+    # Handle Arcs
+    def _create_arc(self, cv_id: int) -> int:
+        cv_data = self.simyan.story_arc(cv_id)
+        questionary.print(
+            f"Story Arc '{cv_data.name}' needs to be created on Metron.", style=Styles.TITLE
+        )
+        name = (
+            cv_data.name
+            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
+            else questionary.text("What should be the story arc name be?").ask()
+        )
+        desc = questionary.text("What should be the description for this story arc?").ask()
+        img = self._get_image(cv_data.image.original)
+        data = {"name": name, "desc": desc, "image": str(img)}
+        resp = self.barda.post_arc(data)
+        self.conversions.store(Resources.Arc.value, cv_data.story_arc_id, resp["id"])
+        questionary.print(
+            f"Add '{name}' to {Resources.Arc.name} conversions", style=Styles.SUCCESS
+        )
+        return resp["id"]
+
+    def _choose_arc(self, arc: GenericEntry) -> int | None:
+        if arc.name:
+            arc_lst: ArcsList = self.mokkari.arcs_list(params={"name": arc.name})
+            if len(arc_lst) < 1:
+                return None
+            choices = []
+            for i in arc_lst:
+                choice = questionary.Choice(title=i.name, value=i.id)
+                choices.append(choice)
+            choices.append(questionary.Choice(title="None", value=""))
+            if metron_id := questionary.select(
+                f"What story arc should be added for '{arc.name}'?", choices=choices
+            ).ask():
+                self.conversions.store(Resources.Arc.value, arc.id_, metron_id)
+                questionary.print(
+                    f"Added '{arc.name}' to {Resources.Arc.name}  conversions",
+                    style=Styles.SUCCESS,
+                )
+                return metron_id
+            else:
+                return None
+
+    def _search_for_arc(self, arc: GenericEntry) -> int:
+        metron_id = self._choose_arc(arc) if arc.name else None
+        if metron_id is not None:
+            return metron_id
+        else:
+            metron_id = self._create_arc(arc.id_)
+
+        return metron_id
+
+    def _create_arc_list(self, arcs: List[GenericEntry]) -> List[int]:
+        arc_lst = []
+        for i in arcs:
+            metron_id = self.conversions.get(Resources.Arc.value, i.id_)
+            if metron_id is None:
+                metron_id = self._search_for_arc(i)
+            arc_lst.append(metron_id)
+        return arc_lst
+
     # Handle Teams
     def _create_team(self, cv_id: int) -> int:
         cv_data = self.simyan.team(cv_id)
@@ -100,7 +174,7 @@ class ComicVine:
         )
         desc = questionary.text("What should be the description for this team?").ask()
         img = self._get_image(cv_data.image.original)
-        data = {"name": name, "desc": desc, "image": img, "creators": []}
+        data = {"name": name, "desc": desc, "image": str(img), "creators": []}
         resp = self.barda.post_team(data)
         self.conversions.store(Resources.Team.value, cv_data.team_id, resp["id"])
         questionary.print(
@@ -197,7 +271,7 @@ class ComicVine:
             ).ask():
                 self.conversions.store(Resources.Character.value, character.id_, metron_id)
                 questionary.print(
-                    f"Added '{character.name}' to {Resources.Character.name}",
+                    f"Added '{character.name}' to {Resources.Character.name} conversions.",
                     style=Styles.SUCCESS,
                 )
                 return metron_id
@@ -338,6 +412,7 @@ class ComicVine:
         cleaned_desc = cleanup_html(cv_issue.description, True)
         character_lst = self._create_character_list(cv_issue.characters)
         team_lst = self._create_team_list(cv_issue.teams)
+        arc_lst = self._create_arc_list(cv_issue.story_arcs)
         img = self._get_image(cv_issue.image.original)
         data = {
             "series": series_id,
@@ -349,6 +424,7 @@ class ComicVine:
             "image": str(img),
             "characters": character_lst,
             "teams": team_lst,
+            "arcs": arc_lst,
         }
         return self.barda.post_issue(data)
 

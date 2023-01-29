@@ -45,6 +45,9 @@ class PostData:
 
         return response.json()
 
+    def post_arc(self, data):
+        return self._post(["arc"], data)
+
     def post_character(self, data):
         return self._post(["character"], data)
 

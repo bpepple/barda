@@ -15,7 +15,8 @@ titlecase = "^2.4"
 bs4 = "^0.0.1"
 requests = "^2.28.2"
 ratelimit = "^2.2.1"
-mokkari = "^2.3.3"
+pillow = "^9.4.0"
+mokkari = {path = "dist/mokkari-3.0.0-py3-none-any.whl"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

@@ -51,6 +51,9 @@ class PostData:
     def post_character(self, data):
         return self._post(["character"], data)
 
+    def post_creator(self, data):
+        return self._post(["creator"], data)
+
     def post_issue(self, data):
         return self._post(["issue"], data)
 

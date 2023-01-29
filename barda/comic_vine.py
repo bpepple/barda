@@ -9,6 +9,7 @@ import requests
 from mokkari import api as m_api
 from mokkari.arc import ArcsList
 from mokkari.character import CharactersList
+from mokkari.creator import CreatorsList
 from mokkari.publisher import PublishersList
 from mokkari.series import SeriesTypeList
 from mokkari.session import Session
@@ -98,6 +99,75 @@ class ComicVine:
             result[index] = titlecase(result[index])
 
         return result
+
+    # Handle Creators
+    def _create_creator(self, cv_id: int) -> int:
+        cv_data = self.simyan.creator(cv_id)
+        questionary.print(
+            f"{Resources.Creator.name} '{cv_data.name}' needs to be created on Metron.",
+            style=Styles.TITLE,
+        )
+        name = (
+            cv_data.name
+            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
+            else questionary.text("What should be the creator's name be?").ask()
+        )
+        desc = questionary.text("What should be the description for this creator?").ask()
+        img = self._get_image(cv_data.image.original)
+        data = {
+            "name": name,
+            "desc": desc,
+            "image": str(img),
+            "alias": [],
+            "birth": cv_data.date_of_birth,
+            "death": cv_data.date_of_death,
+        }
+        resp = self.barda.post_creator(data)
+        self.conversions.store(Resources.Creator.value, cv_data.creator_id, resp["id"])
+        questionary.print(
+            f"Add '{name}' to {Resources.Creator.name} conversions", style=Styles.SUCCESS
+        )
+        return resp["id"]
+
+    def _choose_creator(self, creator: GenericEntry) -> int | None:
+        if creator.name:
+            c_list: CreatorsList = self.mokkari.creators_list(params={"name": creator.name})
+            if len(c_list) < 1:
+                return None
+            choices = []
+            for i in c_list:
+                choice = questionary.Choice(title=i.name, value=i.id)
+                choices.append(choice)
+            choices.append(questionary.Choice(title="None", value=""))
+            if metron_id := questionary.select(
+                f"What creator should be added for '{creator.name}'?", choices=choices
+            ).ask():
+                self.conversions.store(Resources.Creator.value, creator.id_, metron_id)
+                questionary.print(
+                    f"Added '{creator.name}' to {Resources.Creator.name}  conversions",
+                    style=Styles.SUCCESS,
+                )
+                return metron_id
+            else:
+                return None
+
+    def _search_for_creator(self, creator: GenericEntry) -> int:
+        metron_id = self._choose_creator(creator) if creator.name else None
+        if metron_id is not None:
+            return metron_id
+        else:
+            metron_id = self._create_creator(creator.id_)
+
+        return metron_id
+
+    def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
+        arc_lst = []
+        for i in creators:
+            metron_id = self.conversions.get(Resources.Creator.value, i.id_)
+            if metron_id is None:
+                metron_id = self._search_for_creator(i)
+            arc_lst.append(metron_id)
+        return arc_lst
 
     # Handle Arcs
     def _create_arc(self, cv_id: int) -> int:
@@ -239,13 +309,14 @@ class ComicVine:
         ).ask()
         image = self._get_image(cv_data.image.original)
         teams_lst = self._create_team_list(cv_data.teams)
+        creators_lst = self._create_creator_list(cv_data.creators)
         data = {
             "name": name,
             "alias": [],
             "desc": desc,
             "image": str(image),
             "teams": teams_lst,
-            "creators": [],
+            "creators": creators_lst,
         }
         resp = self.barda.post_character(data)
         self.conversions.store(Resources.Character.value, cv_data.character_id, resp["id"])

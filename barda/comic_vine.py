@@ -1,4 +1,4 @@
-import json
+import datetime
 from enum import Enum, unique
 from pathlib import Path
 from typing import List
@@ -19,9 +19,18 @@ from titlecase import titlecase
 
 from barda.exceptions import ApiError
 from barda.post_data import PostData
-from barda.settings import BardaSettings, ResourceKeys
+from barda.resource_keys import ConversionKeys
+from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
+
+
+@unique
+class Resources(Enum):
+    Character = 0
+    Team = 1
+    Arc = 2
+    Creator = 3
 
 
 @unique
@@ -41,6 +50,14 @@ class ComicVine:
         self.simyan = CV(api_key=config.cv_api_key, cache=cache)  # type: ignore
         self.mokkari: Session = m_api(config.metron_user, config.metron_password)
         self.barda = PostData(config.metron_user, config.metron_password)
+        self.conversions = ConversionKeys(str(config.conversions))
+
+    @staticmethod
+    def fix_cover_date(orig_date: datetime.date) -> datetime.date:
+        if orig_date.day != 1:
+            return datetime.date(orig_date.year, orig_date.month, 1)
+        else:
+            return orig_date
 
     @staticmethod
     def _get_image(url: str):
@@ -70,25 +87,6 @@ class ComicVine:
         return result
 
     # Handle Teams
-    def _user_correct_team(self, team: GenericEntry) -> int | None:
-        if self.config.teams:
-            for t in self.config.teams:
-                if not isinstance(t["cv"], int):
-                    t["cv"] = int(t["cv"])
-                if team.id_ == t["cv"]:
-                    if not isinstance(t["metron"], int):
-                        t["metron"] = int(t["metron"])
-                    return t["metron"]
-        return None
-
-    def _add_team_to_keyfile(self, cv_id: int, metron_id: int, name: str) -> None:
-        new_value: ResourceKeys = {"cv": cv_id, "metron": metron_id}
-        if self.config.teams:
-            self.config.teams.append(new_value)
-            self.config.teams = sorted(self.config.teams, key=lambda k: k["cv"])
-            self.config.teams_file.write_text(json.dumps(self.config.teams, indent=4))
-            questionary.print(f"Added '{name}' to team  keyfile", style=Styles.SUCCESS)
-
     def _create_team(self, cv_id: int) -> int:
         cv_data = self.simyan.team(cv_id)
         questionary.print(
@@ -104,7 +102,10 @@ class ComicVine:
         img = self._get_image(cv_data.image.original)
         data = {"name": name, "desc": desc, "image": img, "creators": []}
         resp = self.barda.post_team(data)
-        self._add_team_to_keyfile(cv_data.team_id, resp["id"], resp["name"])
+        self.conversions.store(Resources.Team.value, cv_data.team_id, resp["id"])
+        questionary.print(
+            f"Added '{name}' to {Resources.Team.name}  conversions", style=Styles.SUCCESS
+        )
         return resp["id"]
 
     def _choose_team(self, team: GenericEntry) -> int | None:
@@ -120,7 +121,11 @@ class ComicVine:
             if metron_id := questionary.select(
                 f"What team should be added for '{team.name}'?", choices=choices
             ).ask():
-                self._add_team_to_keyfile(team.id_, metron_id, team.name)
+                self.conversions.store(Resources.Team.value, team.id_, metron_id)
+                questionary.print(
+                    f"Added '{team.name}' to {Resources.Team.name}  conversions",
+                    style=Styles.SUCCESS,
+                )
                 return metron_id
             else:
                 return None
@@ -137,35 +142,13 @@ class ComicVine:
     def _create_team_list(self, teams: List[GenericEntry]) -> List[int]:
         team_lst = []
         for t in teams:
-            metron_id = self._user_correct_team(t)
+            metron_id = self.conversions.get(Resources.Team.value, t.id_)
             if metron_id is None:
                 metron_id = self._search_for_team(t)
             team_lst.append(metron_id)
         return team_lst
 
     # Handle Characters
-    def _use_correct_character(self, character: GenericEntry) -> int | None:
-        if self.config.characters:
-            for c in self.config.characters:
-                if not isinstance(c["cv"], int):
-                    c["cv"] = int(c["cv"])
-                if character.id_ == c["cv"]:
-                    if not isinstance(c["metron"], int):
-                        c["metron"] = int(c["metron"])
-                    return c["metron"]
-
-        return None
-
-    def _add_character_to_keyfile(self, cv_id: int, metron_id: int, name: str) -> None:
-        new_value: ResourceKeys = {"cv": cv_id, "metron": metron_id}
-        if self.config.characters:
-            self.config.characters.append(new_value)
-            self.config.characters = sorted(self.config.characters, key=lambda k: k["cv"])
-            self.config.characters_file.write_text(
-                json.dumps(self.config.characters, indent=4)
-            )
-            questionary.print(f"Added '{name}' to character keyfile", style=Styles.SUCCESS)
-
     def _create_character(self, cv_id: int) -> int:
         cv_data = self.simyan.character(cv_id)
         questionary.print(
@@ -191,7 +174,10 @@ class ComicVine:
             "creators": [],
         }
         resp = self.barda.post_character(data)
-        self._add_character_to_keyfile(cv_data.character_id, resp["id"], resp["name"])
+        self.conversions.store(Resources.Character.value, cv_data.character_id, resp["id"])
+        questionary.print(
+            f"Added '{name}' to {Resources.Character.name} conversions.", style=Styles.SUCCESS
+        )
         return resp["id"]
 
     def _choose_character(self, character: GenericEntry) -> int | None:
@@ -209,7 +195,11 @@ class ComicVine:
             if metron_id := questionary.select(
                 f"What character should be added for '{character.name}'?", choices=choices
             ).ask():
-                self._add_character_to_keyfile(character.id_, metron_id, character.name)
+                self.conversions.store(Resources.Character.value, character.id_, metron_id)
+                questionary.print(
+                    f"Added '{character.name}' to {Resources.Character.name}",
+                    style=Styles.SUCCESS,
+                )
                 return metron_id
             else:
                 return None
@@ -226,7 +216,7 @@ class ComicVine:
     def _create_character_list(self, characters: List[GenericEntry]) -> List[int]:
         character_lst = []
         for c in characters:
-            metron_id = self._use_correct_character(c)
+            metron_id = self.conversions.get(Resources.Character.value, c.id_)
             if metron_id is None:
                 metron_id = self._search_for_character(c)
             character_lst.append(metron_id)
@@ -266,7 +256,9 @@ class ComicVine:
             return None
         choices = []
         for s in results:
-            choice = questionary.Choice(title=f"{s.name} ({s.start_year})", value=s)
+            choice = questionary.Choice(
+                title=f"{s.name} ({s.start_year}) - {s.issue_count} issues", value=s
+            )
             choices.append(choice)
         choices.append(questionary.Choice(title="Skip", value=""))
 
@@ -336,6 +328,12 @@ class ComicVine:
 
     # Issue
     def _create_issue(self, series_id: int, cv_issue: Issue):
+        if cv_issue.cover_date:
+            cover_date = self.fix_cover_date(cv_issue.cover_date)
+        else:
+            # If we don't have a date, let's bail.
+            questionary.print(f"{cv_issue.name} doesn't have a cover date. Exiting...")
+            exit(0)
         stories = self._fix_title_data(cv_issue.name)
         cleaned_desc = cleanup_html(cv_issue.description, True)
         character_lst = self._create_character_list(cv_issue.characters)
@@ -345,7 +343,7 @@ class ComicVine:
             "series": series_id,
             "number": cv_issue.number,
             "name": stories,
-            "cover_date": cv_issue.cover_date,
+            "cover_date": cover_date,
             "store_date": cv_issue.store_date,
             "desc": cleaned_desc,
             "image": str(img),
@@ -364,7 +362,6 @@ class ComicVine:
                 for i in i_list:
                     cv_issue = self.simyan.issue(i.issue_id)
                     new_issue = self._create_issue(new_series_id, cv_issue)
-                    questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)  # type: ignore
-
+                    questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
         else:
             print("Nothing found")

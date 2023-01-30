@@ -3,6 +3,8 @@ from typing import List, Union
 
 import requests
 from ratelimit import limits, sleep_and_retry
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 from barda import exceptions
 
@@ -15,16 +17,11 @@ class PostData:
         self.passwd = passwd
         self.api_url = "http://127.0.0.1:8000/api/{}/"
 
+    @sleep_and_retry
+    @limits(calls=30, period=ONE_MINUTE)
     def _post(self, endpoint: List[Union[str, int]], data):
         url = self.api_url.format("/".join(str(e) for e in endpoint))
-        resp = self._request_post_data(url, data)
-        if "detail" in resp:
-            raise exceptions.ApiError(resp["detail"])
-        return resp
 
-    @sleep_and_retry
-    @limits(calls=25, period=ONE_MINUTE)
-    def _request_post_data(self, url: str, data):
         if "image" in data.keys():
             i = data.pop("image")
             img_path = Path(i)
@@ -34,8 +31,11 @@ class PostData:
             files = None
 
         try:
-            response = requests.post(
-                url, auth=(self.user, self.passwd), data=data, files=files
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            session.mount("https://", HTTPAdapter(max_retries=retry))
+            response = session.post(
+                url, timeout=2.5, auth=(self.user, self.passwd), data=data, files=files
             )
         except requests.exceptions.ConnectionError as e:
             raise exceptions.ApiError(f"Connection error: {repr(e)}") from e
@@ -43,7 +43,10 @@ class PostData:
         if response.status_code == 400:
             raise exceptions.ApiError(f"Bad request. data={data}, image={i}")
 
-        return response.json()
+        resp = response.json()
+        if "detail" in resp:
+            raise exceptions.ApiError(resp["detail"])
+        return resp
 
     def post_arc(self, data):
         return self._post(["arc"], data)
@@ -53,6 +56,9 @@ class PostData:
 
     def post_creator(self, data):
         return self._post(["creator"], data)
+
+    def post_credit(self, data):
+        return self._post(["credit"], data)
 
     def post_issue(self, data):
         return self._post(["issue"], data)

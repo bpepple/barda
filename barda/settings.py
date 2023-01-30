@@ -35,6 +35,7 @@ class BardaSettings:
         self.settings_file = folder / "settings.ini"
         self.conversions = folder / "barda.db"
         self.cv_cache = folder / "cv.db"
+        self.metron_cache = folder / "metron.db"
 
         if not self.settings_file.parent.exists():
             self.settings_file.parent.mkdir()

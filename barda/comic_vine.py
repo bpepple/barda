@@ -10,14 +10,16 @@ from mokkari import api as m_api
 from mokkari.arc import ArcsList
 from mokkari.character import CharactersList
 from mokkari.creator import CreatorsList
+from mokkari.issue import RoleList
 from mokkari.publisher import PublishersList
 from mokkari.series import SeriesTypeList
 from mokkari.session import Session
+from mokkari.sqlite_cache import SqliteCache as sql_cache
 from mokkari.team import TeamsList
 from PIL import Image
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
-from simyan.schemas.generic_entries import GenericEntry
+from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
 from simyan.sqlite_cache import SQLiteCache
 from titlecase import titlecase
 
@@ -38,7 +40,7 @@ class Resources(Enum):
 
 
 @unique
-class CV_Creator_ID(Enum):
+class CV_Creator(Enum):
     Alan_Fine = 56587
     Dan_Buckley = 41596
     Joe_Quesada = 1537
@@ -49,10 +51,11 @@ class CV_Creator_ID(Enum):
 class ComicVine:
     def __init__(self, config: BardaSettings) -> None:
         self.config = config
-        cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
-        # Christ! What a horrible design...
-        self.simyan = CV(api_key=config.cv_api_key, cache=cache)  # type: ignore
-        self.mokkari: Session = m_api(config.metron_user, config.metron_password)
+        cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
+        metron_cache = sql_cache(str(config.metron_cache), 1) if config.metron_cache else None
+
+        self.simyan = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
+        self.mokkari: Session = m_api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
         self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ConversionKeys(str(config.conversions))
 
@@ -100,6 +103,107 @@ class ComicVine:
 
         return result
 
+    # Handle Credits
+    @staticmethod
+    def _bad_creator(cv_id: int) -> bool:
+        bad_creator_id = [67476]
+        return cv_id in bad_creator_id
+
+    @staticmethod
+    def _get_joe_quesada_role(cover_date: datetime.date) -> List[str]:
+        if cover_date >= datetime.date(2011, 4, 1):
+            return ["chief creative officer"]
+        return ["editor in chief"]
+
+    @staticmethod
+    def _get_dan_buckley_role(cover_date: datetime.date) -> List[str]:
+        if cover_date >= datetime.date(2017, 5, 1):
+            return ["president"]
+        return ["publisher"]
+
+    @staticmethod
+    def _get_axel_alonso_role(cover_date: datetime.date) -> List[str]:
+        if cover_date >= datetime.date(2011, 4, 1) and cover_date < datetime.date(2018, 3, 1):
+            return ["editor in chief"]
+        return []
+
+    @staticmethod
+    def _get_cb_cebulski_role(cover_date: datetime.date) -> List[str]:
+        return ["editor in chief"] if cover_date >= datetime.date(2018, 3, 1) else []
+
+    def _handle_specal_creators(self, creator: int, cover_date: datetime.date) -> List[str]:
+        match creator:
+            case CV_Creator.Alan_Fine.value:
+                return ["executive producer"]
+            case CV_Creator.Dan_Buckley.value:
+                return self._get_dan_buckley_role(cover_date)
+            case CV_Creator.Joe_Quesada.value:
+                return self._get_joe_quesada_role(cover_date)
+            case CV_Creator.CB_Cebulski.value:
+                return self._get_cb_cebulski_role(cover_date)
+            case CV_Creator.Axel_Alonso.value:
+                return self._get_axel_alonso_role(cover_date)
+            case _:
+                return []
+
+    @staticmethod
+    def _fix_role_list(roles: List[str]) -> List[str]:
+        role_list = []
+
+        # Handle assistant editors
+        if "editor" in roles and "assistant" in roles:
+            role_list.append("assistant editor")
+            return role_list
+
+        for role in roles:
+            if role.lower() == "penciler":
+                role = "penciller"
+            role_list.append(role)
+        return role_list
+
+    @staticmethod
+    def _ask_for_role(creator: CreatorEntry, metron_roles: RoleList):
+        choices = []
+        for i in metron_roles:
+            choice = questionary.Choice(title=i.name, value=i.id)  # type: ignore
+            choices.append(choice)
+        return questionary.select(
+            f"No role found for {creator.name}. What should it be?", choices=choices
+        ).ask()
+
+    def _create_role_list(self, creator: CreatorEntry, cover_date: datetime.date) -> List[str]:
+        role_lst = self._handle_specal_creators(creator.id_, cover_date)
+        if len(role_lst) == 0:
+            role_lst = creator.roles.split(", ")
+            role_lst = self._fix_role_list(role_lst)
+
+        metron_role_lst = self.mokkari.role_list()
+        roles = []
+        for i in role_lst:
+            roles.extend(
+                m_role.id for m_role in metron_role_lst if i.lower() == m_role.name.lower()
+            )
+
+        if not roles:
+            roles.append(self._ask_for_role(creator, metron_role_lst))
+
+        return roles
+
+    def _add_credits(
+        self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
+    ):
+        for i in credits:
+            if self._bad_creator(i.id_):
+                continue
+            person = GenericEntry(id=i.id_, name=i.name, api_detail_url="")
+            creator_id = self.conversions.get(Resources.Creator.value, i.id_)
+            if creator_id is None:
+                creator_id = self._search_for_creator(person)
+            role_lst = self._create_role_list(i, cover_date)
+            data = {"issue": issue_id, "creator": creator_id, "role": role_lst}
+            self.barda.post_credit(data)
+            questionary.print(f"Added credit for {i.name}.")
+
     # Handle Creators
     def _create_creator(self, cv_id: int) -> int:
         cv_data = self.simyan.creator(cv_id)
@@ -125,7 +229,8 @@ class ComicVine:
         resp = self.barda.post_creator(data)
         self.conversions.store(Resources.Creator.value, cv_data.creator_id, resp["id"])
         questionary.print(
-            f"Add '{name}' to {Resources.Creator.name} conversions", style=Styles.SUCCESS
+            f"Added '{name}' to {Resources.Creator.name} conversions. CV: {cv_data.creator_id}, Metron: {resp['id']}",
+            style=Styles.SUCCESS,
         )
         return resp["id"]
 
@@ -144,7 +249,7 @@ class ComicVine:
             ).ask():
                 self.conversions.store(Resources.Creator.value, creator.id_, metron_id)
                 questionary.print(
-                    f"Added '{creator.name}' to {Resources.Creator.name}  conversions",
+                    f"Added '{creator.name}' to {Resources.Creator.name} conversions. CV: {creator.id_}, Metron: {metron_id}",
                     style=Styles.SUCCESS,
                 )
                 return metron_id
@@ -161,13 +266,13 @@ class ComicVine:
         return metron_id
 
     def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
-        arc_lst = []
+        creator_lst = []
         for i in creators:
             metron_id = self.conversions.get(Resources.Creator.value, i.id_)
             if metron_id is None:
                 metron_id = self._search_for_creator(i)
-            arc_lst.append(metron_id)
-        return arc_lst
+            creator_lst.append(metron_id)
+        return creator_lst
 
     # Handle Arcs
     def _create_arc(self, cv_id: int) -> int:
@@ -497,7 +602,11 @@ class ComicVine:
             "teams": team_lst,
             "arcs": arc_lst,
         }
-        return self.barda.post_issue(data)
+        resp = self.barda.post_issue(data)
+
+        self._add_credits(resp["id"], cover_date, cv_issue.creators)
+
+        return resp
 
     def run(self) -> None:
         if series := self._what_series():

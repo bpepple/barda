@@ -74,11 +74,10 @@ class ComicVine:
         i = i.resize((width, height), Image.Resampling.LANCZOS)
         i.save(img)
 
-    def _get_image(self, url: str):
+    def _get_image(self, url: str) -> Path:
         receive = requests.get(url)
         cv = Path(url)
-        extension = cv.suffix
-        new_fn = f"{uuid.uuid4().hex}{extension}"
+        new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path("/tmp") / new_fn
         img_file.write_bytes(receive.content)
         self._resize_img(img_file)

@@ -7,9 +7,6 @@ from typing import List
 import questionary
 import requests
 from mokkari import api as m_api
-from mokkari.arc import ArcsList
-from mokkari.character import CharactersList
-from mokkari.creator import CreatorsList
 from mokkari.issue import RoleList
 from mokkari.publisher import PublishersList
 from mokkari.series import SeriesTypeList
@@ -102,7 +99,33 @@ class ComicVine:
 
         return result
 
-    # Handle Credits
+    @staticmethod
+    def _create_choices(item) -> List[questionary.Choice] | None:
+        if not item:
+            return None
+        choices: List[questionary.Choice] = []
+        for i in item:
+            choice = questionary.Choice(title=i.name, value=i.id)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return choices
+
+    def _confirm_resource_choice(
+        self, resource: Resources, cv_entry: GenericEntry, choices: List[questionary.Choice]
+    ) -> int | None:
+        if metron_id := questionary.select(
+            f"What {resource.name} should be added for '{cv_entry.name}'?", choices=choices
+        ).ask():
+            self.conversions.store(resource.value, cv_entry.id_, metron_id)
+            questionary.print(
+                f"Added '{cv_entry.name}' to {resource.name} conversions. CV: {cv_entry.id_}, Metron: {metron_id}",
+                style=Styles.SUCCESS,
+            )
+        return metron_id
+
+    ##################
+    # Handle Credits #
+    ##################
     @staticmethod
     def _bad_creator(cv_id: int) -> bool:
         bad_creator_id = [67476]
@@ -198,17 +221,20 @@ class ComicVine:
             creator_id = self.conversions.get(Resources.Creator.value, i.id_)
             if creator_id is None:
                 creator_id = self._search_for_creator(person)
+            if creator_id is None:
+                continue
             role_lst = self._create_role_list(i, cover_date)
             data = {"issue": issue_id, "creator": creator_id, "role": role_lst}
             self.barda.post_credit(data)
             questionary.print(f"Added credit for {i.name}.")
 
-    # Handle Creators
+    ###################
+    # Handle Creators #
+    ###################
     def _create_creator(self, cv_id: int) -> int:
         cv_data = self.simyan.creator(cv_id)
         questionary.print(
-            f"{Resources.Creator.name} '{cv_data.name}' needs to be created on Metron.",
-            style=Styles.TITLE,
+            f"Let's create creator '{cv_data.name}' on Metron", style=Styles.TITLE
         )
         name = (
             cv_data.name
@@ -234,50 +260,66 @@ class ComicVine:
         return resp["id"]
 
     def _choose_creator(self, creator: GenericEntry) -> int | None:
-        if creator.name:
-            c_list: CreatorsList = self.mokkari.creators_list(params={"name": creator.name})
-            if len(c_list) < 1:
-                return None
-            choices = []
-            for i in c_list:
-                choice = questionary.Choice(title=i.name, value=i.id)
-                choices.append(choice)
-            choices.append(questionary.Choice(title="None", value=""))
-            if metron_id := questionary.select(
-                f"What creator should be added for '{creator.name}'?", choices=choices
-            ).ask():
-                self.conversions.store(Resources.Creator.value, creator.id_, metron_id)
-                questionary.print(
-                    f"Added '{creator.name}' to {Resources.Creator.name} conversions. CV: {creator.id_}, Metron: {metron_id}",
-                    style=Styles.SUCCESS,
-                )
-                return metron_id
-            else:
-                return None
+        if not creator.name:
+            return None
 
-    def _search_for_creator(self, creator: GenericEntry) -> int:
+        questionary.print(
+            f"Let's do a creator search on Metron for '{creator.name}'", style=Styles.TITLE
+        )
+        c_list = self.mokkari.creators_list(params={"name": creator.name})
+        choices = self._create_choices(c_list)
+        if choices is None:
+            questionary.print(f"Nothing found for '{creator.name}'", style=Styles.WARNING)
+        elif metron_id := self._confirm_resource_choice(Resources.Creator, creator, choices):
+            return metron_id
+
+        if questionary.confirm(
+            f"Do want to use another name to search for '{creator.name}'?"
+        ).ask():
+            txt = questionary.text(
+                f"What name do you want to search for '{creator.name}'?"
+            ).ask()
+            lst = self.mokkari.creators_list(params={"name": txt})
+            new_choices = self._create_choices(lst)
+            if new_choices is None:
+                questionary.print(f"Nothing found for '{creator.name}'", style=Styles.WARNING)
+            elif metron_id := self._confirm_resource_choice(
+                Resources.Creator, creator, new_choices
+            ):
+                return metron_id
+
+        return None
+
+    def _search_for_creator(self, creator: GenericEntry) -> int | None:
         metron_id = self._choose_creator(creator) if creator.name else None
         if metron_id is not None:
             return metron_id
-        else:
-            metron_id = self._create_creator(creator.id_)
 
-        return metron_id
+        if questionary.confirm(
+            f"Do you want to create a creator for {creator.name} on Metron?"
+        ).ask():
+            return self._create_creator(creator.id_)
+        else:
+            return None
 
     def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
         creator_lst = []
-        for i in creators:
-            metron_id = self.conversions.get(Resources.Creator.value, i.id_)
+        for creator in creators:
+            metron_id = self.conversions.get(Resources.Creator.value, creator.id_)
             if metron_id is None:
-                metron_id = self._search_for_creator(i)
+                metron_id = self._search_for_creator(creator)
+            if metron_id is None:
+                continue
             creator_lst.append(metron_id)
         return creator_lst
 
-    # Handle Arcs
+    ###############
+    # Handle Arcs #
+    ###############
     def _create_arc(self, cv_id: int) -> int:
         cv_data = self.simyan.story_arc(cv_id)
         questionary.print(
-            f"Story Arc '{cv_data.name}' needs to be created on Metron.", style=Styles.TITLE
+            f"Let's create story arc '{cv_data.name}' on Metron", style=Styles.TITLE
         )
         name = (
             cv_data.name
@@ -295,52 +337,61 @@ class ComicVine:
         return resp["id"]
 
     def _choose_arc(self, arc: GenericEntry) -> int | None:
-        if arc.name:
-            arc_lst: ArcsList = self.mokkari.arcs_list(params={"name": arc.name})
-            if len(arc_lst) < 1:
-                return None
-            choices = []
-            for i in arc_lst:
-                choice = questionary.Choice(title=i.name, value=i.id)
-                choices.append(choice)
-            choices.append(questionary.Choice(title="None", value=""))
-            if metron_id := questionary.select(
-                f"What story arc should be added for '{arc.name}'?", choices=choices
-            ).ask():
-                self.conversions.store(Resources.Arc.value, arc.id_, metron_id)
-                questionary.print(
-                    f"Added '{arc.name}' to {Resources.Arc.name}  conversions",
-                    style=Styles.SUCCESS,
-                )
-                return metron_id
-            else:
-                return None
+        if not arc.name:
+            return None
 
-    def _search_for_arc(self, arc: GenericEntry) -> int:
+        questionary.print(
+            f"Let's do a story arc search on Metron for '{arc.name}'", style=Styles.TITLE
+        )
+        arc_lst = self.mokkari.arcs_list(params={"name": arc.name})
+        choices = self._create_choices(arc_lst)
+        if choices is None:
+            questionary.print(f"Nothing found for '{arc.name}'", style=Styles.WARNING)
+        elif metron_id := self._confirm_resource_choice(Resources.Arc, arc, choices):
+            return metron_id
+
+        if questionary.confirm(
+            f"Do want to use another name to search for '{arc.name}'?"
+        ).ask():
+            txt = questionary.text(f"What name do you want to search for '{arc.name}'?").ask()
+            lst = self.mokkari.arcs_list(params={"name": txt})
+            new_choices = self._create_choices(lst)
+            if new_choices is None:
+                questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
+            elif metron_id := self._confirm_resource_choice(Resources.Arc, arc, new_choices):
+                return metron_id
+
+        return None
+
+    def _search_for_arc(self, arc: GenericEntry) -> int | None:
         metron_id = self._choose_arc(arc) if arc.name else None
         if metron_id is not None:
             return metron_id
-        else:
-            metron_id = self._create_arc(arc.id_)
 
-        return metron_id
+        if questionary.confirm(
+            f"Do you want to create a story for {arc.name} on Metron?"
+        ).ask():
+            return self._create_arc(arc.id_)
+        else:
+            return None
 
     def _create_arc_list(self, arcs: List[GenericEntry]) -> List[int]:
         arc_lst = []
-        for i in arcs:
-            metron_id = self.conversions.get(Resources.Arc.value, i.id_)
+        for arc in arcs:
+            metron_id = self.conversions.get(Resources.Arc.value, arc.id_)
             if metron_id is None:
-                metron_id = self._search_for_arc(i)
+                metron_id = self._search_for_arc(arc)
+            if metron_id is None:
+                continue
             arc_lst.append(metron_id)
         return arc_lst
 
-    # Handle Teams
+    ################
+    # Handle Teams #
+    ################
     def _create_team(self, cv_id: int) -> int:
         cv_data = self.simyan.team(cv_id)
-        questionary.print(
-            f"Team '{cv_data.name}' needs to be created on Metron",
-            style=Styles.TITLE,
-        )
+        questionary.print(f"Let's create team '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
             if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
@@ -357,51 +408,62 @@ class ComicVine:
         return resp["id"]
 
     def _choose_team(self, team: GenericEntry) -> int | None:
-        if team.name:
-            t_lst: TeamsList = self.mokkari.teams_list(params={"name": team.name})
-            if len(t_lst) < 1:
-                return None
-            choices = []
-            for i in t_lst:
-                choice = questionary.Choice(title=i.name, value=i.id)
-                choices.append(choice)
-            choices.append(questionary.Choice(title="None", value=""))
-            if metron_id := questionary.select(
-                f"What team should be added for '{team.name}'?", choices=choices
-            ).ask():
-                self.conversions.store(Resources.Team.value, team.id_, metron_id)
-                questionary.print(
-                    f"Added '{team.name}' to {Resources.Team.name}  conversions",
-                    style=Styles.SUCCESS,
-                )
-                return metron_id
-            else:
-                return None
+        if not team.name:
+            return None
 
-    def _search_for_team(self, team: GenericEntry) -> int:
+        questionary.print(
+            f"Let's do a team search on Metron for '{team.name}'", style=Styles.TITLE
+        )
+        team_lst: TeamsList = self.mokkari.teams_list(params={"name": team.name})
+        choices = self._create_choices(team_lst)
+        if choices is None:
+            questionary.print(f"Nothing found for '{team.name}'", style=Styles.WARNING)
+        elif metron_id := self._confirm_resource_choice(Resources.Team, team, choices):
+            return metron_id
+
+        if questionary.confirm(
+            f"Do want to use another name to search for '{team.name}'?"
+        ).ask():
+            txt = questionary.text(f"What name do you want to search for '{team.name}'?").ask()
+            lst = self.mokkari.teams_list(params={"name": txt})
+            new_choices = self._create_choices(lst)
+            if new_choices is None:
+                questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
+            elif metron_id := self._confirm_resource_choice(Resources.Team, team, new_choices):
+                return metron_id
+
+        return None
+
+    def _search_for_team(self, team: GenericEntry) -> int | None:
         metron_id = self._choose_team(team) if team.name else None
         if metron_id is not None:
             return metron_id
-        else:
-            metron_id = self._create_team(team.id_)
 
-        return metron_id
+        if questionary.confirm(
+            f"Do you want to create a team for '{team.name}' on Metron?"
+        ).ask():
+            return self._create_team(team.id_)
+        else:
+            return None
 
     def _create_team_list(self, teams: List[GenericEntry]) -> List[int]:
         team_lst = []
-        for t in teams:
-            metron_id = self.conversions.get(Resources.Team.value, t.id_)
+        for team in teams:
+            metron_id = self.conversions.get(Resources.Team.value, team.id_)
             if metron_id is None:
-                metron_id = self._search_for_team(t)
+                metron_id = self._search_for_team(team)
+            if metron_id is None:
+                continue
             team_lst.append(metron_id)
         return team_lst
 
-    # Handle Characters
+    #####################
+    # Handle Characters #
+    #####################
     def _create_character(self, cv_id: int) -> int:
         cv_data = self.simyan.character(cv_id)
         questionary.print(
-            f"Character '{cv_data.name}' needs to be created on Metron",
-            style=Styles.TITLE,
+            f"Let's create character '{cv_data.name}' on Metron", style=Styles.TITLE
         )
         name = (
             cv_data.name
@@ -430,48 +492,64 @@ class ComicVine:
         return resp["id"]
 
     def _choose_character(self, character: GenericEntry) -> int | None:
-        if character.name:
-            c_lst: CharactersList = self.mokkari.characters_list(
-                params={"name": character.name}
-            )
-            if len(c_lst) < 1:
-                return None
-            choices = []
-            for i in c_lst:
-                choice = questionary.Choice(title=i.name, value=i.id)
-                choices.append(choice)
-            choices.append(questionary.Choice(title="None", value=""))
-            if metron_id := questionary.select(
-                f"What character should be added for '{character.name}'?", choices=choices
-            ).ask():
-                self.conversions.store(Resources.Character.value, character.id_, metron_id)
-                questionary.print(
-                    f"Added '{character.name}' to {Resources.Character.name} conversions.",
-                    style=Styles.SUCCESS,
-                )
-                return metron_id
-            else:
-                return None
+        if not character.name:
+            return None
 
-    def _search_for_character(self, character: GenericEntry) -> int:
+        questionary.print(
+            f"Let's do a character search on Metron for '{character.name}'", style=Styles.TITLE
+        )
+        c_list = self.mokkari.characters_list(params={"name": character.name})
+        choices = self._create_choices(c_list)
+        if choices is None:
+            questionary.print(f"Nothing found for '{character.name}'", style=Styles.WARNING)
+        elif metron_id := self._confirm_resource_choice(
+            Resources.Character, character, choices
+        ):
+            return metron_id
+
+        if questionary.confirm(
+            f"Do want to use another name to search for '{character.name}'?"
+        ).ask():
+            txt = questionary.text(
+                f"What name do you want to search for '{character.name}'?"
+            ).ask()
+            lst = self.mokkari.characters_list(params={"name": txt})
+            new_choices = self._create_choices(lst)
+            if new_choices is None:
+                questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
+            elif metron_id := self._confirm_resource_choice(
+                Resources.Character, character, new_choices
+            ):
+                return metron_id
+
+        return None
+
+    def _search_for_character(self, character: GenericEntry) -> int | None:
         metron_id = self._choose_character(character) if character.name else None
         if metron_id is not None:
             return metron_id
-        else:
-            metron_id = self._create_character(character.id_)
 
-        return metron_id
+        if questionary.confirm(
+            f"Do you want to create a character for '{character.name}' on Metron?"
+        ).ask():
+            return self._create_character(character.id_)
+        else:
+            return None
 
     def _create_character_list(self, characters: List[GenericEntry]) -> List[int]:
         character_lst = []
-        for c in characters:
-            metron_id = self.conversions.get(Resources.Character.value, c.id_)
+        for character in characters:
+            metron_id = self.conversions.get(Resources.Character.value, character.id_)
             if metron_id is None:
-                metron_id = self._search_for_character(c)
+                metron_id = self._search_for_character(character)
+            if metron_id is None:
+                continue
             character_lst.append(metron_id)
         return character_lst
 
-    # Series Type
+    ###############
+    # Series Type #
+    ###############
     def _choose_series_type(self):  # sourcery skip: class-extract-method
         st_lst: SeriesTypeList = self.mokkari.series_type_list()
         choices = []
@@ -480,7 +558,9 @@ class ComicVine:
             choices.append(choice)
         return questionary.select("What type of series is this?", choices=choices).ask()
 
-    # Publisher
+    #############
+    # Publisher #
+    #############
     def _choose_publisher(self):
         pub_lst: PublishersList = self.mokkari.publishers_list()
         choices = []
@@ -492,7 +572,9 @@ class ComicVine:
             "Which publisher is this series from?", choices=choices
         ).ask()
 
-    # Series
+    ##########
+    # Series #
+    ##########
     def _what_series(self) -> VolumeEntry | None:
         series = questionary.text("What series do you want to import?").ask()
         if not (
@@ -546,7 +628,7 @@ class ComicVine:
             ).ask()
             else int(questionary.text("What begin year should be used for this series?").ask())
         )
-        if series_type_id == 2:
+        if series_type_id == 11:
             year_end = int(questionary.text("What year did this series end in?").ask())
         else:
             year_end = None
@@ -575,7 +657,9 @@ class ComicVine:
 
         return new_series["id"]
 
-    # Issue
+    #########
+    # Issue #
+    #########
     def _create_issue(self, series_id: int, cv_issue: Issue):
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)

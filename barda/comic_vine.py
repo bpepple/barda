@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from enum import Enum, unique
+from enum import Enum, auto, unique
 from pathlib import Path
 from typing import List
 
@@ -13,7 +13,6 @@ from mokkari.series import SeriesTypeList
 from mokkari.session import Session
 from mokkari.sqlite_cache import SqliteCache as sql_cache
 from mokkari.team import TeamsList
-from PIL import Image
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
 from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
@@ -21,11 +20,19 @@ from simyan.sqlite_cache import SQLiteCache
 from titlecase import titlecase
 
 from barda.exceptions import ApiError
+from barda.image import CVImage
 from barda.post_data import PostData
 from barda.resource_keys import ConversionKeys
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
+
+
+@unique
+class ImageType(Enum):
+    Cover = auto()
+    Creator = auto()
+    Resource = auto()
 
 
 @unique
@@ -63,21 +70,22 @@ class ComicVine:
         else:
             return orig_date
 
-    @staticmethod
-    def _resize_img(img: Path) -> None:
-        width = 600
-        height = 923
-        i = Image.open(img)
-        i = i.resize((width, height), Image.Resampling.LANCZOS)
-        i.save(img)
-
-    def _get_image(self, url: str) -> Path:
+    def _get_image(self, url: str, img_type: ImageType) -> Path | None:
         receive = requests.get(url)
         cv = Path(url)
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path("/tmp") / new_fn
         img_file.write_bytes(receive.content)
-        self._resize_img(img_file)
+        cv_img = CVImage(img_file)
+        match img_type:
+            case ImageType.Cover:
+                cv_img.resize_cover()
+            case ImageType.Resource:
+                cv_img.resize_resource()
+            case ImageType.Creator:
+                cv_img.resize_creator()
+            case _:
+                return None
         return img_file
 
     @staticmethod
@@ -242,7 +250,7 @@ class ComicVine:
             else questionary.text("What should be the creator's name be?").ask()
         )
         desc = questionary.text("What should be the description for this creator?").ask()
-        img = self._get_image(cv_data.image.original)
+        img = self._get_image(cv_data.image.original, ImageType.Creator)
         data = {
             "name": name,
             "desc": desc,
@@ -327,7 +335,7 @@ class ComicVine:
             else questionary.text("What should be the story arc name be?").ask()
         )
         desc = questionary.text("What should be the description for this story arc?").ask()
-        img = self._get_image(cv_data.image.original)
+        img = self._get_image(cv_data.image.original, ImageType.Resource)
         data = {"name": name, "desc": desc, "image": str(img)}
         resp = self.barda.post_arc(data)
         self.conversions.store(Resources.Arc.value, cv_data.story_arc_id, resp["id"])
@@ -398,7 +406,7 @@ class ComicVine:
             else questionary.text("What should the team name be?").ask()
         )
         desc = questionary.text("What should be the description for this team?").ask()
-        img = self._get_image(cv_data.image.original)
+        img = self._get_image(cv_data.image.original, ImageType.Resource)
         data = {"name": name, "desc": desc, "image": str(img), "creators": []}
         resp = self.barda.post_team(data)
         self.conversions.store(Resources.Team.value, cv_data.team_id, resp["id"])
@@ -473,7 +481,7 @@ class ComicVine:
         desc = questionary.text(
             "What description do you want to have for this character?"
         ).ask()
-        image = self._get_image(cv_data.image.original)
+        image = self._get_image(cv_data.image.original, ImageType.Resource)
         teams_lst = self._create_team_list(cv_data.teams)
         creators_lst = self._create_creator_list(cv_data.creators)
         data = {
@@ -672,7 +680,7 @@ class ComicVine:
         character_lst = self._create_character_list(cv_issue.characters)
         team_lst = self._create_team_list(cv_issue.teams)
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
-        img = self._get_image(cv_issue.image.original)
+        img = self._get_image(cv_issue.image.original, ImageType.Cover)
         data = {
             "series": series_id,
             "number": cv_issue.number,

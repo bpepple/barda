@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import Enum, auto, unique
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import questionary
 import requests
@@ -20,6 +20,8 @@ from simyan.sqlite_cache import SQLiteCache
 from titlecase import titlecase
 
 from barda.exceptions import ApiError
+from barda.gcd.db import DB
+from barda.gcd.gcd_issue import GCD_Issue, Rating
 from barda.image import CVImage
 from barda.post_data import PostData
 from barda.resource_keys import ConversionKeys
@@ -73,7 +75,7 @@ class ComicVine:
     def _get_image(self, url: str, img_type: ImageType) -> str | None:
         receive = requests.get(url)
         cv = Path(url)
-        if cv.name in ["6373148-blank.png"]:
+        if cv.name in ["6373148-blank.png", "img_broken.png"]:
             return None
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path("/tmp") / new_fn
@@ -132,6 +134,48 @@ class ComicVine:
                 style=Styles.SUCCESS,
             )
         return metron_id
+
+    # GCD methods
+    @staticmethod
+    def _select_gcd_series(series_lst: List[Any]) -> int | None:
+        choices = []
+        for (count, series) in enumerate(series_lst, start=0):
+            choice = questionary.Choice(
+                title=f"{series[1]} ({series[2]}): {series[3]} issues - {series[4]}", value=count
+            )
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return questionary.select("What GCD series do you want to use?", choices=choices).ask()
+
+    @staticmethod
+    def _select_gcd_issue(issue_lst: List[Any]) -> int | None:
+        choices = []
+        for (count, issue) in enumerate(issue_lst, start=0):
+            choice = questionary.Choice(title=f"#{issue[1]}", value=count)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return questionary.select("What GCD issue number should be used?", choices=choices).ask()
+
+    def _get_gcd_issue(self, gcd_series_id, issue_number: str):
+        with DB() as gcd_obj:
+            issue_lst = gcd_obj.get_issues(gcd_series_id, issue_number)
+            if not issue_lst:
+                return None
+            issue_count = len(issue_lst)
+            idx = self._select_gcd_issue(issue_lst) if issue_count > 1 else 0
+            if idx is not None:
+                gcd_issue = issue_lst[idx]
+                return GCD_Issue(
+                    gcd_id=gcd_issue[0],  # type: ignore
+                    number=gcd_issue[1],  # type: ignore
+                    price=gcd_issue[2],  # type: ignore
+                    barcode=gcd_issue[3],  # type: ignore
+                    pages=gcd_issue[4],  # type: ignore
+                    rating=gcd_issue[5],  # type: ignore
+                    publisher=gcd_issue[6],  # type: ignore
+                )
+            else:
+                return None
 
     ##################
     # Handle Credits #
@@ -636,7 +680,7 @@ class ComicVine:
             ).ask()
             else int(questionary.text("What begin year should be used for this series?").ask())
         )
-        if series_type_id == 11:
+        if series_type_id in [11, 2]:
             year_end = int(questionary.text("What year did this series end in?").ask())
         else:
             year_end = None
@@ -668,7 +712,12 @@ class ComicVine:
     #########
     # Issue #
     #########
-    def _create_issue(self, series_id: int, cv_issue: Issue):
+    def _create_issue(self, series_id: int, cv_issue: Issue, gcd_series_id):
+        if cv_issue.number:
+            gcd = self._get_gcd_issue(gcd_series_id, cv_issue.number)
+        else:
+            gcd = None
+
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)
         else:
@@ -681,6 +730,16 @@ class ComicVine:
         team_lst = self._create_team_list(cv_issue.teams)
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
         img = self._get_image(cv_issue.image.original, ImageType.Cover)
+        if gcd is not None:
+            upc = gcd.barcode
+            price = gcd.price
+            pages = gcd.pages
+            rating = gcd.rating
+        else:
+            upc = None
+            price = None
+            pages = None
+            rating = Rating.Unknown.value
         data = {
             "series": series_id,
             "number": cv_issue.number,
@@ -688,6 +747,10 @@ class ComicVine:
             "cover_date": cover_date,
             "store_date": cv_issue.store_date,
             "desc": cleaned_desc,
+            "upc": upc,
+            "price": price,
+            "page": pages,
+            "rating": rating,
             "image": img,
             "characters": character_lst,
             "teams": team_lst,
@@ -705,13 +768,23 @@ class ComicVine:
     def run(self) -> None:
         if series := self._what_series():
             new_series_id = self._create_series(series)
+            with DB() as db_obj:
+                gcd_query = questionary.text(
+                    "What series name do you want to use to search GCD?"
+                ).ask()
+                if gcd_series_list := db_obj.get_series_list(gcd_query):
+                    gcd_idx = self._select_gcd_series(gcd_series_list)
+                    gcd_series_id = None if gcd_idx is None else gcd_series_list[gcd_idx][0]
+                else:
+                    questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
+                    gcd_series_id = None
 
             if i_list := self.simyan.issue_list(
                 params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
             ):
                 for i in i_list:
                     cv_issue = self.simyan.issue(i.issue_id)
-                    new_issue = self._create_issue(new_series_id, cv_issue)
+                    new_issue = self._create_issue(new_series_id, cv_issue, gcd_series_id)
                     if new_issue is not None:
                         questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
                     else:

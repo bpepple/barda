@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Union
 
@@ -8,6 +9,7 @@ from urllib3 import Retry
 
 from barda import exceptions
 
+LOGGER = logging.getLogger(__name__)
 ONE_MINUTE = 60
 
 
@@ -24,8 +26,11 @@ class PostData:
 
         if "image" in data.keys():
             i = data.pop("image")
-            img_path = Path(i)
-            files = {"image": (img_path.name, img_path.open(mode="rb"))}
+            if i is not None:
+                img_path = Path(i)
+                files = {"image": (img_path.name, img_path.read_bytes())}
+            else:
+                files = None
         else:
             i = None
             files = None
@@ -38,13 +43,16 @@ class PostData:
                 url, timeout=2.5, auth=(self.user, self.passwd), data=data, files=files
             )
         except requests.exceptions.ConnectionError as e:
+            LOGGER.error(f"Connection error: {repr(e)}")
             raise exceptions.ApiError(f"Connection error: {repr(e)}") from e
 
         if response.status_code == 400:
+            LOGGER.error(f"Bad Request: data={data}, image={i}")
             raise exceptions.ApiError(f"Bad request. data={data}, image={i}")
 
         resp = response.json()
         if "detail" in resp:
+            LOGGER.error(f"Server Error: {resp['detail']}")
             raise exceptions.ApiError(resp["detail"])
         return resp
 

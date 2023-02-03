@@ -70,9 +70,11 @@ class ComicVine:
         else:
             return orig_date
 
-    def _get_image(self, url: str, img_type: ImageType) -> Path | None:
+    def _get_image(self, url: str, img_type: ImageType) -> str | None:
         receive = requests.get(url)
         cv = Path(url)
+        if cv.name in ["6373148-blank.png"]:
+            return None
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path("/tmp") / new_fn
         img_file.write_bytes(receive.content)
@@ -86,7 +88,7 @@ class ComicVine:
                 cv_img.resize_creator()
             case _:
                 return None
-        return img_file
+        return str(img_file)
 
     @staticmethod
     def _fix_title_data(title: str | None) -> List[str]:
@@ -221,7 +223,7 @@ class ComicVine:
 
     def _add_credits(
         self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
-    ):
+    ) -> None:
         for i in credits:
             if self._bad_creator(i.id_):
                 continue
@@ -233,17 +235,19 @@ class ComicVine:
                 continue
             role_lst = self._create_role_list(i, cover_date)
             data = {"issue": issue_id, "creator": creator_id, "role": role_lst}
-            self.barda.post_credit(data)
-            questionary.print(f"Added credit for {i.name}.")
+            try:
+                self.barda.post_credit(data)
+            except ApiError:
+                questionary.print(f"Failed to add credit for '{i.name}'", style=Styles.ERROR)
+                return
+            questionary.print(f"Added credit for {i.name}.", style=Styles.SUCCESS)
 
     ###################
     # Handle Creators #
     ###################
-    def _create_creator(self, cv_id: int) -> int:
+    def _create_creator(self, cv_id: int) -> int | None:
         cv_data = self.simyan.creator(cv_id)
-        questionary.print(
-            f"Let's create creator '{cv_data.name}' on Metron", style=Styles.TITLE
-        )
+        questionary.print(f"Let's create creator '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
             if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
@@ -254,12 +258,18 @@ class ComicVine:
         data = {
             "name": name,
             "desc": desc,
-            "image": str(img),
+            "image": img,
             "alias": [],
             "birth": cv_data.date_of_birth,
             "death": cv_data.date_of_death,
         }
-        resp = self.barda.post_creator(data)
+
+        try:
+            resp = self.barda.post_creator(data)
+        except ApiError:
+            questionary.print(f"Failed to create creator: '{name}'.", style=Styles.ERROR)
+            return None
+
         self.conversions.store(Resources.Creator.value, cv_data.creator_id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Creator.name} conversions. CV: {cv_data.creator_id}, Metron: {resp['id']}",
@@ -284,9 +294,7 @@ class ComicVine:
         if questionary.confirm(
             f"Do want to use another name to search for '{creator.name}'?"
         ).ask():
-            txt = questionary.text(
-                f"What name do you want to search for '{creator.name}'?"
-            ).ask()
+            txt = questionary.text(f"What name do you want to search for '{creator.name}'?").ask()
             lst = self.mokkari.creators_list(params={"name": txt})
             new_choices = self._create_choices(lst)
             if new_choices is None:
@@ -324,11 +332,9 @@ class ComicVine:
     ###############
     # Handle Arcs #
     ###############
-    def _create_arc(self, cv_id: int) -> int:
+    def _create_arc(self, cv_id: int) -> int | None:
         cv_data = self.simyan.story_arc(cv_id)
-        questionary.print(
-            f"Let's create story arc '{cv_data.name}' on Metron", style=Styles.TITLE
-        )
+        questionary.print(f"Let's create story arc '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
             if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
@@ -336,12 +342,16 @@ class ComicVine:
         )
         desc = questionary.text("What should be the description for this story arc?").ask()
         img = self._get_image(cv_data.image.original, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": str(img)}
-        resp = self.barda.post_arc(data)
+        data = {"name": name, "desc": desc, "image": img}
+
+        try:
+            resp = self.barda.post_arc(data)
+        except ApiError:
+            questionary.print(f"Fail to create story arc for '{name}'.", style=Styles.ERROR)
+            return None
+
         self.conversions.store(Resources.Arc.value, cv_data.story_arc_id, resp["id"])
-        questionary.print(
-            f"Add '{name}' to {Resources.Arc.name} conversions", style=Styles.SUCCESS
-        )
+        questionary.print(f"Add '{name}' to {Resources.Arc.name} conversions", style=Styles.SUCCESS)
         return resp["id"]
 
     def _choose_arc(self, arc: GenericEntry) -> int | None:
@@ -358,9 +368,7 @@ class ComicVine:
         elif metron_id := self._confirm_resource_choice(Resources.Arc, arc, choices):
             return metron_id
 
-        if questionary.confirm(
-            f"Do want to use another name to search for '{arc.name}'?"
-        ).ask():
+        if questionary.confirm(f"Do want to use another name to search for '{arc.name}'?").ask():
             txt = questionary.text(f"What name do you want to search for '{arc.name}'?").ask()
             lst = self.mokkari.arcs_list(params={"name": txt})
             new_choices = self._create_choices(lst)
@@ -376,9 +384,7 @@ class ComicVine:
         if metron_id is not None:
             return metron_id
 
-        if questionary.confirm(
-            f"Do you want to create a story for {arc.name} on Metron?"
-        ).ask():
+        if questionary.confirm(f"Do you want to create a story for {arc.name} on Metron?").ask():
             return self._create_arc(arc.id_)
         else:
             return None
@@ -397,7 +403,7 @@ class ComicVine:
     ################
     # Handle Teams #
     ################
-    def _create_team(self, cv_id: int) -> int:
+    def _create_team(self, cv_id: int) -> int | None:
         cv_data = self.simyan.team(cv_id)
         questionary.print(f"Let's create team '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
@@ -407,8 +413,14 @@ class ComicVine:
         )
         desc = questionary.text("What should be the description for this team?").ask()
         img = self._get_image(cv_data.image.original, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": str(img), "creators": []}
-        resp = self.barda.post_team(data)
+        data = {"name": name, "desc": desc, "image": img, "creators": []}
+
+        try:
+            resp = self.barda.post_team(data)
+        except ApiError:
+            questionary.print(f"Failed to create team for '{name}'.", style=Styles.ERROR)
+            return None
+
         self.conversions.store(Resources.Team.value, cv_data.team_id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Team.name}  conversions", style=Styles.SUCCESS
@@ -419,9 +431,7 @@ class ComicVine:
         if not team.name:
             return None
 
-        questionary.print(
-            f"Let's do a team search on Metron for '{team.name}'", style=Styles.TITLE
-        )
+        questionary.print(f"Let's do a team search on Metron for '{team.name}'", style=Styles.TITLE)
         team_lst: TeamsList = self.mokkari.teams_list(params={"name": team.name})
         choices = self._create_choices(team_lst)
         if choices is None:
@@ -429,9 +439,7 @@ class ComicVine:
         elif metron_id := self._confirm_resource_choice(Resources.Team, team, choices):
             return metron_id
 
-        if questionary.confirm(
-            f"Do want to use another name to search for '{team.name}'?"
-        ).ask():
+        if questionary.confirm(f"Do want to use another name to search for '{team.name}'?").ask():
             txt = questionary.text(f"What name do you want to search for '{team.name}'?").ask()
             lst = self.mokkari.teams_list(params={"name": txt})
             new_choices = self._create_choices(lst)
@@ -447,9 +455,7 @@ class ComicVine:
         if metron_id is not None:
             return metron_id
 
-        if questionary.confirm(
-            f"Do you want to create a team for '{team.name}' on Metron?"
-        ).ask():
+        if questionary.confirm(f"Do you want to create a team for '{team.name}' on Metron?").ask():
             return self._create_team(team.id_)
         else:
             return None
@@ -468,31 +474,33 @@ class ComicVine:
     #####################
     # Handle Characters #
     #####################
-    def _create_character(self, cv_id: int) -> int:
+    def _create_character(self, cv_id: int) -> int | None:
         cv_data = self.simyan.character(cv_id)
-        questionary.print(
-            f"Let's create character '{cv_data.name}' on Metron", style=Styles.TITLE
-        )
+        questionary.print(f"Let's create character '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
             if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
             else questionary.text("What should the characters name be?").ask()
         )
-        desc = questionary.text(
-            "What description do you want to have for this character?"
-        ).ask()
-        image = self._get_image(cv_data.image.original, ImageType.Resource)
+        desc = questionary.text("What description do you want to have for this character?").ask()
+        img = self._get_image(cv_data.image.original, ImageType.Resource)
         teams_lst = self._create_team_list(cv_data.teams)
         creators_lst = self._create_creator_list(cv_data.creators)
         data = {
             "name": name,
             "alias": [],
             "desc": desc,
-            "image": str(image),
+            "image": img,
             "teams": teams_lst,
             "creators": creators_lst,
         }
-        resp = self.barda.post_character(data)
+
+        try:
+            resp = self.barda.post_character(data)
+        except ApiError:
+            questionary.print(f"Failed to create character for '{name}'.", style=Styles.ERROR)
+            return None
+
         self.conversions.store(Resources.Character.value, cv_data.character_id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Character.name} conversions.", style=Styles.SUCCESS
@@ -510,17 +518,13 @@ class ComicVine:
         choices = self._create_choices(c_list)
         if choices is None:
             questionary.print(f"Nothing found for '{character.name}'", style=Styles.WARNING)
-        elif metron_id := self._confirm_resource_choice(
-            Resources.Character, character, choices
-        ):
+        elif metron_id := self._confirm_resource_choice(Resources.Character, character, choices):
             return metron_id
 
         if questionary.confirm(
             f"Do want to use another name to search for '{character.name}'?"
         ).ask():
-            txt = questionary.text(
-                f"What name do you want to search for '{character.name}'?"
-            ).ask()
+            txt = questionary.text(f"What name do you want to search for '{character.name}'?").ask()
             lst = self.mokkari.characters_list(params={"name": txt})
             new_choices = self._create_choices(lst)
             if new_choices is None:
@@ -576,9 +580,7 @@ class ComicVine:
             choice = questionary.Choice(title=p.name, value=p.id)
             choices.append(choice)
         # TODO: Provide option to add a Publisher
-        return questionary.select(
-            "Which publisher is this series from?", choices=choices
-        ).ask()
+        return questionary.select("Which publisher is this series from?", choices=choices).ask()
 
     ##########
     # Series #
@@ -624,9 +626,7 @@ class ComicVine:
             else questionary.text("What should the sort name be?").ask()
         )
         # TODO: Need to validate this.
-        volume = int(
-            questionary.text(f"What is the volume number for '{display_name}'?").ask()
-        )
+        volume = int(questionary.text(f"What is the volume number for '{display_name}'?").ask())
         publisher_id = self._choose_publisher()
         series_type_id = self._choose_series_type()
         year_began = (
@@ -640,9 +640,7 @@ class ComicVine:
             year_end = int(questionary.text("What year did this series end in?").ask())
         else:
             year_end = None
-        desc = questionary.text(
-            f"Do you want to add a series summary for '{display_name}'?"
-        ).ask()
+        desc = questionary.text(f"Do you want to add a series summary for '{display_name}'?").ask()
 
         data = {
             "name": series_name,
@@ -659,8 +657,10 @@ class ComicVine:
 
         try:
             new_series = self.barda.post_series(data)
-        except ApiError as e:
-            questionary.print(f"API Error: {e}", style=Styles.ERROR)
+        except ApiError:
+            questionary.print(
+                f"Failed to create series for '{series_name}'. Exiting...", style=Styles.ERROR
+            )
             exit(0)
 
         return new_series["id"]
@@ -688,12 +688,15 @@ class ComicVine:
             "cover_date": cover_date,
             "store_date": cv_issue.store_date,
             "desc": cleaned_desc,
-            "image": str(img),
+            "image": img,
             "characters": character_lst,
             "teams": team_lst,
             "arcs": arc_lst,
         }
-        resp = self.barda.post_issue(data)
+        try:
+            resp = self.barda.post_issue(data)
+        except ApiError:
+            return None
 
         self._add_credits(resp["id"], cover_date, cv_issue.creators)
 
@@ -704,11 +707,16 @@ class ComicVine:
             new_series_id = self._create_series(series)
 
             if i_list := self.simyan.issue_list(
-                params={"filter": f"volume:{series.volume_id}"}
+                params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
             ):
                 for i in i_list:
                     cv_issue = self.simyan.issue(i.issue_id)
                     new_issue = self._create_issue(new_series_id, cv_issue)
-                    questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
+                    if new_issue is not None:
+                        questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
+                    else:
+                        questionary.print(
+                            f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
+                        )
         else:
             print("Nothing found")

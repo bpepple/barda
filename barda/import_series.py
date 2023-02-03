@@ -54,7 +54,7 @@ class CV_Creator(Enum):
     Axel_Alonso = 23115
 
 
-class ComicVine:
+class ImportSeries:
     def __init__(self, config: BardaSettings) -> None:
         self.config = config
         cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None

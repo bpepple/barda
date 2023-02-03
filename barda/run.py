@@ -2,14 +2,13 @@ from enum import Enum, auto, unique
 
 import questionary
 
-from barda.comic_vine import ComicVine
+from barda.import_series import ImportSeries
 from barda.settings import BardaSettings
 
 
 @unique
-class SourceType(Enum):
-    ComicVine = auto()
-    LoCG = auto()
+class TaskType(Enum):
+    Import_Series = auto()
 
 
 class Runner:
@@ -21,8 +20,8 @@ class Runner:
     @staticmethod
     def _what_task():
         choices = []
-        for source in SourceType:
-            choice = questionary.Choice(title=f"{source.name}", value=source.value)
+        for task in TaskType:
+            choice = questionary.Choice(title=f"{task.name}", value=task.value)
             choices.append(choice)
         choices.append(questionary.Choice(title="Quit", value="q"))
         result = questionary.select("Choose what task you want to do", choices=choices).ask()
@@ -75,11 +74,9 @@ class Runner:
 
         task = self._what_task()
         match task:
-            case SourceType.ComicVine.value:
+            case TaskType.Import_Series.value:
                 if self.config.cv_api_key:
-                    cv = ComicVine(self.config)
+                    cv = ImportSeries(self.config)
                     cv.run()
-            case SourceType.LoCG.value:
-                print("Going to import from League of Comic Geeks...")
             case _:
                 print("Invalid choice.")

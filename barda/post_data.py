@@ -1,4 +1,5 @@
 import logging
+import platform
 from pathlib import Path
 from typing import List, Union
 
@@ -7,7 +8,7 @@ from ratelimit import limits, sleep_and_retry
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-from barda import exceptions
+from barda import __version__, exceptions
 
 LOGGER = logging.getLogger(__name__)
 ONE_MINUTE = 60
@@ -17,7 +18,11 @@ class PostData:
     def __init__(self, user: str, passwd: str) -> None:
         self.user = user
         self.passwd = passwd
-        self.api_url = "http://127.0.0.1:8000/api/{}/"
+        # self.api_url = "http://127.0.0.1:8000/api/{}/"
+        self.api_url = "https://metron.cloud/api/{}/"
+        self.header = {
+            "User-Agent": f"Barda/{__version__} ({platform.system()}; {platform.release()})"
+        }
 
     @sleep_and_retry
     @limits(calls=30, period=ONE_MINUTE)
@@ -40,7 +45,12 @@ class PostData:
             retry = Retry(connect=3, backoff_factor=0.5)
             session.mount("https://", HTTPAdapter(max_retries=retry))
             response = session.post(
-                url, timeout=2.5, auth=(self.user, self.passwd), data=data, files=files
+                url,
+                timeout=40,
+                headers=self.header,
+                auth=(self.user, self.passwd),
+                data=data,
+                files=files,
             )
         except requests.exceptions.ConnectionError as e:
             LOGGER.error(f"Connection error: {repr(e)}")

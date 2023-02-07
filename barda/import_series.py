@@ -156,7 +156,7 @@ class ImportSeries:
         choices.append(questionary.Choice(title="None", value=""))
         return questionary.select("What GCD issue number should be used?", choices=choices).ask()
 
-    def _get_gcd_issue(self, gcd_series_id, issue_number: str):
+    def _get_gcd_issue(self, gcd_series_id, issue_number: str) -> GCD_Issue | None:
         with DB() as gcd_obj:
             issue_lst = gcd_obj.get_issues(gcd_series_id, issue_number)
             if not issue_lst:
@@ -182,6 +182,7 @@ class ImportSeries:
     ##################
     @staticmethod
     def _bad_creator(cv_id: int) -> bool:
+        # Typeset creator
         bad_creator_id = [67476]
         return cv_id in bad_creator_id
 

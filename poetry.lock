@@ -225,7 +225,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "mokkari"
-version = "3.0.0"
+version = "2.3.3"
 description = "Python wrapper for Metron API"
 category = "main"
 optional = false
@@ -238,10 +238,6 @@ requests = ">=2.26.0,<3.0.0"
 
 [package.extras]
 docs = ["sphinx-rtd-theme (>=0.5.2,<0.6.0)", "sphinxcontrib-napoleon (>=0.7,<0.8)"]
-
-[package.source]
-type = "file"
-url = "dist/mokkari-3.0.0-py3-none-any.whl"
 
 [[package]]
 name = "mypy-extensions"
@@ -592,7 +588,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "da7932bfe7db651e3897184d959b12bc88fcb3e512f5fde46af528c07db0f9cd"
+content-hash = "4f8482287a53bde58321df5235def7bbc2ce3b425f0077c998adf37bf476d689"
 
 [metadata.files]
 attrs = [
@@ -733,7 +729,8 @@ mccabe = [
     {file = "mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325"},
 ]
 mokkari = [
-    {file = "mokkari-3.0.0-py3-none-any.whl", hash = "sha256:260efb2f64ca245049aa1a916d5aebb64f863ecdcb7c7932c0dfb87a735018bf"},
+    {file = "mokkari-2.3.3-py3-none-any.whl", hash = "sha256:4afe4e315af4ce11b1c5e67df12fd37a5922297bb3f4b5e0ea0d25aca99c7c9d"},
+    {file = "mokkari-2.3.3.tar.gz", hash = "sha256:95b5cd6722248bbdd3960afc17e354f45c0fe35333ecbe7bf014acb5b0952117"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},

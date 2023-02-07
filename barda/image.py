@@ -22,7 +22,7 @@ class CVImage:
     def _determine_shape(self) -> ImageShape | None:
         i = Image.open(self.image)
         width, height = i.size
-        i.close()
+
         if width == height:
             return ImageShape.Square
         elif width > height:
@@ -32,10 +32,17 @@ class CVImage:
         else:
             return None
 
+    def _convert_to_rgb(self) -> None:
+        i = Image.open(self.image)
+        if i.mode in ("RGBA", "P"):
+            i = i.convert("RGB")
+            i.save(self.image)
+
     def resize_cover(self) -> None:  # sourcery skip: class-extract-method
         if self._determine_shape() is not ImageShape.Tall:
             # Cover needs to be cropped
             return
+        self._convert_to_rgb()
         i = Image.open(self.image)
         w, h = i.size
         if w == COVER_WIDTH:
@@ -45,10 +52,10 @@ class CVImage:
         hsize = int(float(h) * float(wpercent))
         i = i.resize((COVER_WIDTH, hsize), Image.Resampling.LANCZOS)
         i.save(self.image)
-        i.close()
 
     def resize_creator(self) -> None:  # sourcery skip: extract-duplicate-method
         left = top = 0
+        self._convert_to_rgb()
         shape = self._determine_shape()
         i = Image.open(self.image)
         w, h = i.size
@@ -57,24 +64,25 @@ class CVImage:
                 if w != CREATOR_WIDTH:
                     i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
                     i.save(self.image)
-                    i.close()
+
             case ImageShape.Tall:
                 i = i.crop((left, top, w, w))
                 i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
                 i.save(self.image)
-                i.close()
+
             case ImageShape.Wide:
                 # TODO: Need to center crop this
                 i = i.crop((top, left, h, h))
                 i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
                 i.save(self.image)
-                i.close()
+
             case _:
-                i.close()
+
                 return
 
     def resize_resource(self) -> None:  # sourcery skip: extract-duplicate-method, extract-method
         shape = self._determine_shape()
+        self._convert_to_rgb()
         i = Image.open(self.image)
         w, h = i.size
         top = 0
@@ -84,7 +92,7 @@ class CVImage:
                 hsize = int(float(h) * float(wpercent))
                 i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
                 i.save(self.image)
-                i.close()
+
             case ImageShape.Wide | ImageShape.Square:
                 crop_width = int(float(h) / float(3) * float(2))
                 diff = w - crop_width
@@ -96,7 +104,7 @@ class CVImage:
                 hsize = int(float(h) * float(wpercent))
                 i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
                 i.save(self.image)
-                i.close()
+
             case _:
-                i.close()
+
                 return

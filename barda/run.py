@@ -4,6 +4,7 @@ import questionary
 
 from barda.import_series import ImportSeries
 from barda.settings import BardaSettings
+from barda.styles import Styles
 
 
 @unique
@@ -29,7 +30,7 @@ class Runner:
         if result != "q":
             return result
 
-        print("Quiting...")
+        questionary.print("Quiting...", style=Styles.SUCCESS)
         exit(0)
 
     def _has_cv_credentials(self) -> bool:
@@ -79,4 +80,4 @@ class Runner:
                     cv = ImportSeries(self.config)
                     cv.run()
             case _:
-                print("Invalid choice.")
+                questionary.print("Invalid choice.", style=Styles.ERROR)

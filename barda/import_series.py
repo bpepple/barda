@@ -177,6 +177,17 @@ class ImportSeries:
             else:
                 return None
 
+    def _get_gcd_stories(self, gcd_issue_id):
+        with DB() as gcd_obj:
+            stories_list = gcd_obj.get_stories(gcd_issue_id)
+            if not stories_list:
+                return []
+            stories = []
+            for i in stories_list:
+                story = "[Untitled]" if i[0] else str(i[0])
+                stories.append(story.strip())
+            return stories
+
     ##################
     # Handle Credits #
     ##################
@@ -725,7 +736,9 @@ class ImportSeries:
             # If we don't have a date, let's bail.
             questionary.print(f"{cv_issue.name} doesn't have a cover date. Exiting...")
             exit(0)
-        stories = self._fix_title_data(cv_issue.name)
+
+        gcd_stories = self._get_gcd_stories(gcd.id) if gcd is not None else None
+        stories = gcd_stories or self._fix_title_data(cv_issue.name)
         cleaned_desc = cleanup_html(cv_issue.description, True)
         character_lst = self._create_character_list(cv_issue.characters)
         team_lst = self._create_team_list(cv_issue.teams)

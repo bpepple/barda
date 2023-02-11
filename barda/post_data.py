@@ -31,13 +31,13 @@ class PostData:
 
         if "image" in data.keys():
             i = data.pop("image")
-            if i is not None:
+            if i:
                 img_path = Path(i)
                 files = {"image": (img_path.name, img_path.read_bytes())}
             else:
                 files = None
         else:
-            i = None
+            i = ""
             files = None
 
         try:

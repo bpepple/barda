@@ -1,5 +1,5 @@
 class Styles:
-    TITLE = "bold fg:ansiblue"
+    TITLE = "bold fg:ansiwhite"
     SUCCESS = "fg:ansigreen"
     WARNING = "fg:ansiyellow"
     ERROR = "fg:ansired"

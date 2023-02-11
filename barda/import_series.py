@@ -15,6 +15,7 @@ from mokkari.sqlite_cache import SqliteCache as sql_cache
 from mokkari.team import TeamsList
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
+from simyan.exceptions import ServiceError
 from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
 from simyan.sqlite_cache import SQLiteCache
 from titlecase import titlecase
@@ -28,6 +29,7 @@ from barda.resource_keys import ConversionKeys
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
+from barda.validators import YearValidator
 
 
 @unique
@@ -72,11 +74,11 @@ class ImportSeries:
         else:
             return orig_date
 
-    def _get_image(self, url: str, img_type: ImageType) -> str | None:
+    def _get_image(self, url: str, img_type: ImageType) -> str:
         receive = requests.get(url)
         cv = Path(url)
         if cv.name in ["6373148-blank.png", "img_broken.png"]:
-            return None
+            return ""
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path("/tmp") / new_fn
         img_file.write_bytes(receive.content)
@@ -89,7 +91,7 @@ class ImportSeries:
             case ImageType.Creator:
                 cv_img.resize_creator()
             case _:
-                return None
+                return ""
         return str(img_file)
 
     @staticmethod
@@ -182,10 +184,14 @@ class ImportSeries:
             stories_list = gcd_obj.get_stories(gcd_issue_id)
             if not stories_list:
                 return []
+
+            if len(stories_list) == 1 and not stories_list[0][0]:
+                return []
+
             stories = []
             for i in stories_list:
-                story = "[Untitled]" if i[0] else str(i[0])
-                stories.append(story.strip())
+                story = str(i[0]) if i[0] else "[Untitled]"
+                stories.append(story)
             return stories
 
     ##################
@@ -302,7 +308,15 @@ class ImportSeries:
     # Handle Creators #
     ###################
     def _create_creator(self, cv_id: int) -> int | None:
-        cv_data = self.simyan.creator(cv_id)
+        try:
+            cv_data = self.simyan.creator(cv_id)
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve information from Comic Vine for Creator ID: {cv_id}.",
+                style=Styles.ERROR,
+            )
+            return None
+
         questionary.print(f"Let's create creator '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
@@ -389,7 +403,14 @@ class ImportSeries:
     # Handle Arcs #
     ###############
     def _create_arc(self, cv_id: int) -> int | None:
-        cv_data = self.simyan.story_arc(cv_id)
+        try:
+            cv_data = self.simyan.story_arc(cv_id)
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve information from Comic Vine for Story Arc ID: {cv_id}.",
+                style=Styles.ERROR,
+            )
+            return None
         questionary.print(f"Let's create story arc '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
@@ -460,7 +481,15 @@ class ImportSeries:
     # Handle Teams #
     ################
     def _create_team(self, cv_id: int) -> int | None:
-        cv_data = self.simyan.team(cv_id)
+        try:
+            cv_data = self.simyan.team(cv_id)
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve information from Comic Vine for Team ID: {cv_id}.",
+                style=Styles.ERROR,
+            )
+            return None
+
         questionary.print(f"Let's create team '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
@@ -531,7 +560,15 @@ class ImportSeries:
     # Handle Characters #
     #####################
     def _create_character(self, cv_id: int) -> int | None:
-        cv_data = self.simyan.character(cv_id)
+        try:
+            cv_data = self.simyan.character(cv_id)
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve information from Comic Vine for Character ID: {cv_id}.",
+                style=Styles.ERROR,
+            )
+            return None
+
         questionary.print(f"Let's create character '{cv_data.name}' on Metron", style=Styles.TITLE)
         name = (
             cv_data.name
@@ -643,14 +680,22 @@ class ImportSeries:
     ##########
     def _what_series(self) -> VolumeEntry | None:
         series = questionary.text("What series do you want to import?").ask()
-        if not (
-            results := self.simyan.volume_list(
+        try:
+            results = self.simyan.volume_list(
                 params={
                     "filter": f"name:{series}",
                 }
             )
-        ):
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve information from Comic Vine for Series: {series}.",
+                style=Styles.ERROR,
+            )
             return None
+
+        if not results:
+            return None
+
         choices = []
         for s in results:
             choice = questionary.Choice(
@@ -681,7 +726,6 @@ class ImportSeries:
             if questionary.confirm(f"Should '{series_name}' also be the Sort Name?").ask()
             else questionary.text("What should the sort name be?").ask()
         )
-        # TODO: Need to validate this.
         volume = int(questionary.text(f"What is the volume number for '{display_name}'?").ask())
         publisher_id = self._choose_publisher()
         series_type_id = self._choose_series_type()
@@ -690,10 +734,16 @@ class ImportSeries:
             if questionary.confirm(
                 f"Is '{cv_series.start_year}' the correct year that this series began?"
             ).ask()
-            else int(questionary.text("What begin year should be used for this series?").ask())
+            else int(
+                questionary.text(
+                    "What begin year should be used for this series?", validate=YearValidator
+                ).ask()
+            )
         )
         if series_type_id in [11, 2]:
-            year_end = int(questionary.text("What year did this series end in?").ask())
+            year_end = int(
+                questionary.text("What year did this series end in?", validate=YearValidator).ask()
+            )
         else:
             year_end = None
         desc = questionary.text(f"Do you want to add a series summary for '{display_name}'?").ask()
@@ -725,8 +775,11 @@ class ImportSeries:
     # Issue #
     #########
     def _create_issue(self, series_id: int, cv_issue: Issue, gcd_series_id):
+        gcd_stories = None
         if cv_issue.number:
             gcd = self._get_gcd_issue(gcd_series_id, cv_issue.number)
+            if gcd is not None:
+                gcd_stories = self._get_gcd_stories(gcd.id)
         else:
             gcd = None
 
@@ -736,9 +789,11 @@ class ImportSeries:
             # If we don't have a date, let's bail.
             questionary.print(f"{cv_issue.name} doesn't have a cover date. Exiting...")
             exit(0)
+        if gcd_stories is not None and len(gcd_stories) > 0:
+            stories = gcd_stories
+        else:
+            stories = self._fix_title_data(cv_issue.name)
 
-        gcd_stories = self._get_gcd_stories(gcd.id) if gcd is not None else None
-        stories = gcd_stories or self._fix_title_data(cv_issue.name)
         cleaned_desc = cleanup_html(cv_issue.description, True)
         character_lst = self._create_character_list(cv_issue.characters)
         team_lst = self._create_team_list(cv_issue.teams)
@@ -781,6 +836,7 @@ class ImportSeries:
 
     def run(self) -> None:
         if series := self._what_series():
+            # TODO: Ask if we to use existing series
             new_series_id = self._create_series(series)
             with DB() as db_obj:
                 gcd_query = questionary.text(
@@ -793,11 +849,28 @@ class ImportSeries:
                     questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
                     gcd_series_id = None
 
-            if i_list := self.simyan.issue_list(
-                params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
-            ):
+            try:
+                i_list = self.simyan.issue_list(
+                    params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
+                )
+            except ServiceError:
+                questionary.print(
+                    f"Failed to retrieve issue list from Comic Vine for Series: {series.name}.",
+                    style=Styles.ERROR,
+                )
+                return None
+
+            if i_list:
                 for i in i_list:
-                    cv_issue = self.simyan.issue(i.issue_id)
+                    try:
+                        cv_issue = self.simyan.issue(i.issue_id)
+                    except ServiceError:
+                        questionary.print(
+                            f"Failed to retrieve information from Comic Vine for Issue: {i.volume.name} #{i.number}.",
+                            style=Styles.ERROR,
+                        )
+                        return None
+
                     new_issue = self._create_issue(new_series_id, cv_issue, gcd_series_id)
                     if new_issue is not None:
                         questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)

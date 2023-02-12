@@ -6,7 +6,16 @@ This module provides the following classes:
 - ResourceKeys
 """
 import sqlite3
+from enum import Enum, unique
 from typing import Any
+
+
+@unique
+class Resources(Enum):
+    Character = 0
+    Team = 1
+    Arc = 2
+    Creator = 3
 
 
 class ResourceKeys:

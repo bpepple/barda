@@ -2,8 +2,8 @@ from enum import Enum, auto, unique
 
 import questionary
 
-from barda.import_series import ImportSeries, Resources
-from barda.resource_keys import ResourceKeys
+from barda.import_series import ImportSeries
+from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
 

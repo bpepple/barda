@@ -25,7 +25,7 @@ from barda.gcd.db import DB
 from barda.gcd.gcd_issue import GCD_Issue, Rating
 from barda.image import CVImage
 from barda.post_data import PostData
-from barda.resource_keys import ResourceKeys
+from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
@@ -37,14 +37,6 @@ class ImageType(Enum):
     Cover = auto()
     Creator = auto()
     Resource = auto()
-
-
-@unique
-class Resources(Enum):
-    Character = 0
-    Team = 1
-    Arc = 2
-    Creator = 3
 
 
 @unique

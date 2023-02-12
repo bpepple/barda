@@ -25,7 +25,7 @@ from barda.gcd.db import DB
 from barda.gcd.gcd_issue import GCD_Issue, Rating
 from barda.image import CVImage
 from barda.post_data import PostData
-from barda.resource_keys import ConversionKeys
+from barda.resource_keys import ResourceKeys
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
@@ -65,7 +65,7 @@ class ImportSeries:
         self.simyan = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
         self.mokkari: Session = m_api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
         self.barda = PostData(config.metron_user, config.metron_password)
-        self.conversions = ConversionKeys(str(config.conversions))
+        self.conversions = ResourceKeys(str(config.conversions))
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:

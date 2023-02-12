@@ -2,7 +2,8 @@ from enum import Enum, auto, unique
 
 import questionary
 
-from barda.import_series import ImportSeries
+from barda.import_series import ImportSeries, Resources
+from barda.resource_keys import ResourceKeys
 from barda.settings import BardaSettings
 from barda.styles import Styles
 
@@ -10,6 +11,7 @@ from barda.styles import Styles
 @unique
 class TaskType(Enum):
     Import_Series = auto()
+    Update_Resource = auto()
 
 
 class Runner:
@@ -17,6 +19,22 @@ class Runner:
 
     def __init__(self, config: BardaSettings) -> None:
         self.config = config
+
+    @staticmethod
+    def _select_resource() -> int:
+        choices = []
+        for i in Resources:
+            choice = questionary.Choice(title=i.name, value=i.value)
+            choices.append(choice)
+        return int(questionary.select("What Resource do you want to edit?", choices=choices).ask())
+
+    def _update_resource_key(self) -> None:
+        resource = self._select_resource()
+        cv_id = int(questionary.text("What is the Comic Vine ID for the resource?").ask())
+        metron_id = int(questionary.text("What should the new value be for the Metron ID?").ask())
+        conv = ResourceKeys(str(self.config.conversions))
+        conv.edit(resource, cv_id, metron_id)
+        questionary.print(f"Updated CV ID: {cv_id}", style=Styles.SUCCESS)
 
     @staticmethod
     def _what_task():
@@ -79,5 +97,7 @@ class Runner:
                 if self.config.cv_api_key:
                     cv = ImportSeries(self.config)
                     cv.run()
+            case TaskType.Update_Resource.value:
+                self._update_resource_key()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

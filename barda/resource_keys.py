@@ -1,24 +1,24 @@
 """
-ConversionKeys module.
+ResourceKeys module.
 
 This module provides the following classes:
 
-- ConversionKeys
+- ResourceKeys
 """
 import sqlite3
 from typing import Any
 
 
-class ConversionKeys:
+class ResourceKeys:
     """
-    The ConversionKeys object to save Comic Vine and Metron ID's.
+    The ResourceKeys object to save Comic Vine and Metron ID's.
 
     Args:
         db_name (str): Path and database name to use.
     """
 
     def __init__(self, db_name: str = "barda.db") -> None:
-        """Initialize a new ConversionKeys database."""
+        """Initialize a new ResourceKeys database."""
         self.con = sqlite3.connect(db_name)
         self.cur = self.con.cursor()
         self.cur.execute("CREATE TABLE IF NOT EXISTS conversions (resource, cv, metron)")
@@ -48,5 +48,20 @@ class ConversionKeys:
         self.cur.execute(
             "INSERT INTO conversions(resource, cv, metron) VALUES(?,?,?)",
             (resource, cv, metron),
+        )
+        self.con.commit()
+
+    def edit(self, resource: int, cv: int, metron: int) -> None:
+        """
+        Update the Resource Conversion ID's.
+
+        Args:
+            resource (int): The Resource enum value.
+            cv (int): The Comic Vine ID.
+            metron (int): The Metron ID.
+        """
+        self.cur.execute(
+            "UPDATE conversions SET metron = ? WHERE resource = ? AND cv = ?",
+            (metron, resource, cv),
         )
         self.con.commit()

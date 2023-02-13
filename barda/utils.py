@@ -3,10 +3,6 @@ import re
 from bs4 import BeautifulSoup
 
 
-def remove_zero_decimal(num: str) -> str:
-    return num if num.isdecimal() else num.rstrip("0").rstrip(".")
-
-
 def cleanup_html(string, remove_html_tables):  # sourcery skip: low-code-quality
     """
     converter = html2text.HTML2Text()

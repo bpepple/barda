@@ -6,6 +6,7 @@ from barda.import_series import ImportSeries
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
+from barda.validators import NumberValidator
 
 
 @unique
@@ -30,8 +31,16 @@ class Runner:
 
     def _update_resource_key(self) -> None:
         resource = self._select_resource()
-        cv_id = int(questionary.text("What is the Comic Vine ID for the resource?").ask())
-        metron_id = int(questionary.text("What should the new value be for the Metron ID?").ask())
+        cv_id = int(
+            questionary.text(
+                "What is the Comic Vine ID for the resource?", validate=NumberValidator
+            ).ask()
+        )
+        metron_id = int(
+            questionary.text(
+                "What should the new value be for the Metron ID?", validate=NumberValidator
+            ).ask()
+        )
         conv = ResourceKeys(str(self.config.conversions))
         conv.edit(resource, cv_id, metron_id)
         questionary.print(f"Updated CV ID: {cv_id}", style=Styles.SUCCESS)

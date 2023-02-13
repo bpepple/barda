@@ -29,7 +29,7 @@ from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
-from barda.validators import YearValidator
+from barda.validators import NumberValidator, YearValidator
 
 
 @unique
@@ -718,7 +718,11 @@ class ImportSeries:
             if questionary.confirm(f"Should '{series_name}' also be the Sort Name?").ask()
             else questionary.text("What should the sort name be?").ask()
         )
-        volume = int(questionary.text(f"What is the volume number for '{display_name}'?").ask())
+        volume = int(
+            questionary.text(
+                f"What is the volume number for '{display_name}'?", validate=NumberValidator
+            ).ask()
+        )
         publisher_id = self._choose_publisher()
         series_type_id = self._choose_series_type()
         year_began = (

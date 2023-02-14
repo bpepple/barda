@@ -46,6 +46,7 @@ class CV_Creator(Enum):
     Joe_Quesada = 1537
     CB_Cebulski = 43193
     Axel_Alonso = 23115
+    Jim_Shooter = 40450
 
 
 class ImportSeries:
@@ -217,6 +218,12 @@ class ImportSeries:
     def _get_cb_cebulski_role(cover_date: datetime.date) -> List[str]:
         return ["editor in chief"] if cover_date >= datetime.date(2018, 3, 1) else []
 
+    @staticmethod
+    def _get_jim_shooter_role(cover_date: datetime.date) -> List[str]:
+        if cover_date >= datetime.date(1978, 3, 1) and cover_date < datetime.date(1987, 10, 1):
+            return ["editor in chief"]
+        return []
+
     def _handle_specal_creators(self, creator: int, cover_date: datetime.date) -> List[str]:
         match creator:
             case CV_Creator.Alan_Fine.value:
@@ -229,6 +236,8 @@ class ImportSeries:
                 return self._get_cb_cebulski_role(cover_date)
             case CV_Creator.Axel_Alonso.value:
                 return self._get_axel_alonso_role(cover_date)
+            case CV_Creator.Jim_Shooter.value:
+                return self._get_jim_shooter_role(cover_date)
             case _:
                 return []
 
@@ -275,9 +284,10 @@ class ImportSeries:
 
         return roles
 
-    def _add_credits(
+    def _create_credits_list(
         self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
-    ) -> None:
+    ) -> List:
+        credits_lst = []
         for i in credits:
             if self._bad_creator(i.id_):
                 continue
@@ -289,12 +299,9 @@ class ImportSeries:
                 continue
             role_lst = self._create_role_list(i, cover_date)
             data = {"issue": issue_id, "creator": creator_id, "role": role_lst}
-            try:
-                self.barda.post_credit(data)
-            except ApiError:
-                questionary.print(f"Failed to add credit for '{i.name}'", style=Styles.ERROR)
-                return
-            questionary.print(f"Added credit for {i.name}.", style=Styles.SUCCESS)
+            credits_lst.append(data)
+
+        return credits_lst
 
     ###################
     # Handle Creators #
@@ -826,7 +833,12 @@ class ImportSeries:
         except ApiError:
             return None
 
-        self._add_credits(resp["id"], cover_date, cv_issue.creators)
+        credits_lst = self._create_credits_list(resp["id"], cover_date, cv_issue.creators)
+        try:
+            self.barda.post_credit(credits_lst)
+            questionary.print(f"Added credits for #{resp['number']}.", style=Styles.SUCCESS)
+        except ApiError:
+            questionary.print(f"Failed to add credits for #{resp['number']}", style=Styles.ERROR)
 
         return resp
 

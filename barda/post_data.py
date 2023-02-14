@@ -1,3 +1,4 @@
+import json
 import logging
 import platform
 from pathlib import Path
@@ -66,6 +67,41 @@ class PostData:
             raise exceptions.ApiError(resp["detail"])
         return resp
 
+    @sleep_and_retry
+    @limits(calls=10, period=ONE_MINUTE)
+    def _post_credits(self, endpoint: List[Union[str, int]], data):
+        url = self.api_url.format("/".join(str(e) for e in endpoint))
+
+        header = {
+            "User-Agent": f"Barda/{__version__} ({platform.system()}; {platform.release()})",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            session.mount("https://", HTTPAdapter(max_retries=retry))
+            response = session.post(
+                url,
+                timeout=40,
+                headers=header,
+                auth=(self.user, self.passwd),
+                data=json.dumps(data),
+            )
+        except requests.exceptions.ConnectionError as e:
+            LOGGER.error(f"Connection error: {repr(e)}")
+            raise exceptions.ApiError(f"Connection error: {repr(e)}") from e
+
+        if response.status_code == 400:
+            LOGGER.error(f"Bad Request: data={data}")
+            raise exceptions.ApiError(f"Bad request. data={data}")
+
+        resp = response.json()
+        if "detail" in resp:
+            LOGGER.error(f"Server Error: {resp['detail']}")
+            raise exceptions.ApiError(resp["detail"])
+        return resp
+
     def post_arc(self, data):
         return self._post(["arc"], data)
 
@@ -76,7 +112,7 @@ class PostData:
         return self._post(["creator"], data)
 
     def post_credit(self, data):
-        return self._post(["credit"], data)
+        return self._post_credits(["credit"], data)
 
     def post_issue(self, data):
         return self._post(["issue"], data)

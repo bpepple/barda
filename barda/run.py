@@ -104,8 +104,8 @@ class Runner:
         match task:
             case TaskType.Import_Series.value:
                 if self.config.cv_api_key:
-                    cv = ImportSeries(self.config)
-                    cv.run()
+                    with ImportSeries(self.config) as importer_obj:
+                        importer_obj.run()
             case TaskType.Update_Resource.value:
                 self._update_resource_key()
             case _:

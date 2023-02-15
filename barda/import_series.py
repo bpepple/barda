@@ -2,6 +2,7 @@ import datetime
 import uuid
 from enum import Enum, auto, unique
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, List
 
 import questionary
@@ -59,6 +60,13 @@ class ImportSeries:
         self.mokkari: Session = m_api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
         self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ResourceKeys(str(config.conversions))
+        self.image_dir = TemporaryDirectory()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.image_dir.cleanup()
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -73,7 +81,7 @@ class ImportSeries:
         if cv.name in ["6373148-blank.png", "img_broken.png"]:
             return ""
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
-        img_file = Path("/tmp") / new_fn
+        img_file = Path(self.image_dir.name) / new_fn
         img_file.write_bytes(receive.content)
         cv_img = CVImage(img_file)
         match img_type:
@@ -89,7 +97,7 @@ class ImportSeries:
 
     @staticmethod
     def _fix_title_data(title: str | None) -> List[str]:
-        if title is None:
+        if title is None or title == "":
             return []
 
         # Strip any trailing semicolon and change backslash to semicolon,

@@ -27,6 +27,8 @@ class BardaSettings:
         self.metron_user: str = ""
         self.metron_password: str = ""
         self.cv_api_key: Optional[str] = None
+        self.marvel_public_key: str = ""
+        self.marvel_private_key: str = ""
 
         self.config = configparser.ConfigParser()
 
@@ -36,6 +38,7 @@ class BardaSettings:
         self.conversions = folder / "barda.db"
         self.cv_cache = folder / "cv.db"
         self.metron_cache = folder / "metron.db"
+        self.marvel_cache = folder / "marvel.db"
 
         if not self.settings_file.parent.exists():
             self.settings_file.parent.mkdir()
@@ -59,6 +62,12 @@ class BardaSettings:
         if self.config.has_option("comic_vine", "api_key"):
             self.cv_api_key = self.config["comic_vine"]["api_key"]
 
+        if self.config.has_option("marvel", "public_key"):
+            self.marvel_public_key = self.config["marvel"]["public_key"]
+
+        if self.config.has_option("marvel", "private_key"):
+            self.marvel_private_key = self.config["marvel"]["private_key"]
+
     def save(self) -> None:
         """Method to save a users settings"""
         if not self.config.has_section("metron"):
@@ -72,6 +81,14 @@ class BardaSettings:
 
         if self.cv_api_key:
             self.config["comic_vine"]["api_key"] = self.cv_api_key
+
+        if not self.config.has_section("marvel"):
+            self.config.add_section("marvel")
+
+        if self.marvel_public_key:
+            self.config["marvel"]["public_key"] = self.marvel_public_key
+        if self.marvel_private_key:
+            self.config["marvel"]["private_key"] = self.marvel_private_key
 
         with self.settings_file.open("w") as configfile:
             self.config.write(configfile)

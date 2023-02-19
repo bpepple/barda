@@ -1,4 +1,5 @@
 import datetime
+import logging
 import uuid
 from enum import Enum, auto, unique
 from pathlib import Path
@@ -31,6 +32,13 @@ from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
 from barda.validators import NumberValidator, YearValidator
+
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+handler = logging.FileHandler("barda.log")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+handler.setFormatter(formatter)
+LOGGER.addHandler(handler)
 
 
 @unique
@@ -76,13 +84,16 @@ class ImportSeries:
             return orig_date
 
     def _get_image(self, url: str, img_type: ImageType) -> str:
+        LOGGER.debug("Entering get_image()...")
         receive = requests.get(url)
         cv = Path(url)
+        LOGGER.debug(f"Comic Vine image: {cv.name}")
         if cv.name in ["6373148-blank.png", "img_broken.png"]:
             return ""
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path(self.image_dir.name) / new_fn
         img_file.write_bytes(receive.content)
+        LOGGER.debug(f"Image saved as '{img_file.name}'.")
         cv_img = CVImage(img_file)
         match img_type:
             case ImageType.Cover:
@@ -93,10 +104,13 @@ class ImportSeries:
                 cv_img.resize_creator()
             case _:
                 return ""
+
+        LOGGER.debug("Exiting get_image()...")
         return str(img_file)
 
     @staticmethod
     def _fix_title_data(title: str | None) -> List[str]:
+        LOGGER.debug("Entering fix_title_data()...")
         if title is None or title == "":
             return []
 
@@ -112,6 +126,8 @@ class ImportSeries:
             # Capitalize title correctly
             result[index] = titlecase(result[index])
 
+        LOGGER.debug(f"title: {result}")
+        LOGGER.debug("Exiting fix_title_data()...")
         return result
 
     @staticmethod
@@ -181,8 +197,10 @@ class ImportSeries:
                 return None
 
     def _get_gcd_stories(self, gcd_issue_id):
+        LOGGER.debug("Entering get_gcd_stories()...")
         with DB() as gcd_obj:
             stories_list = gcd_obj.get_stories(gcd_issue_id)
+            LOGGER.debug(f"gcd_stories: {stories_list}")
             if not stories_list:
                 return []
 
@@ -193,6 +211,9 @@ class ImportSeries:
             for i in stories_list:
                 story = str(i[0]) if i[0] else "[Untitled]"
                 stories.append(story)
+
+            LOGGER.debug(f"Stories: {stories}")
+            LOGGER.debug("Exiting get_gcd_stories()...")
             return stories
 
     ##################
@@ -315,6 +336,7 @@ class ImportSeries:
     # Handle Creators #
     ###################
     def _create_creator(self, cv_id: int) -> int | None:
+        LOGGER.debug("Entering create_creator()...")
         try:
             cv_data = self.simyan.creator(cv_id)
         except ServiceError:
@@ -331,7 +353,9 @@ class ImportSeries:
             else questionary.text("What should be the creator's name be?").ask()
         )
         desc = questionary.text("What should be the description for this creator?").ask()
+        LOGGER.debug(f"Retrieving image for '{name}'.")
         img = self._get_image(cv_data.image.original, ImageType.Creator)
+        LOGGER.debug(f"{name} image: {img}")
         data = {
             "name": name,
             "desc": desc,
@@ -352,6 +376,7 @@ class ImportSeries:
             f"Added '{name}' to {Resources.Creator.name} conversions. CV: {cv_data.creator_id}, Metron: {resp['id']}",
             style=Styles.SUCCESS,
         )
+        LOGGER.debug("Exiting create_creator()...")
         return resp["id"]
 
     def _choose_creator(self, creator: GenericEntry) -> int | None:

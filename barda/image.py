@@ -1,3 +1,4 @@
+import logging
 from enum import Enum, auto, unique
 from pathlib import Path
 
@@ -6,6 +7,13 @@ from PIL import Image
 COVER_WIDTH = 600
 RESOURCE_WIDTH = 320
 CREATOR_WIDTH = 256  # Also the height
+
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+handler = logging.FileHandler("barda.log")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+handler.setFormatter(formatter)
+LOGGER.addHandler(handler)
 
 
 @unique
@@ -33,10 +41,14 @@ class CVImage:
             return None
 
     def _convert_to_rgb(self) -> None:
+        LOGGER.debug("Entering covert_to_rgb()...")
         i = Image.open(self.image)
-        if i.mode in ("RGBA", "P"):
+        mode = i.mode
+        LOGGER.debug(f"Image '{self.image.name}' mode is '{mode}'.")
+        if mode in ("RGBA", "P"):
             i = i.convert("RGB")
             i.save(self.image)
+        LOGGER.debug("Exiting convert_to_rbg()...")
 
     def resize_cover(self) -> None:  # sourcery skip: class-extract-method
         if self._determine_shape() is not ImageShape.Tall:
@@ -54,11 +66,13 @@ class CVImage:
         i.save(self.image)
 
     def resize_creator(self) -> None:  # sourcery skip: extract-duplicate-method
+        LOGGER.debug("Entering resize_creator()...")
         left = top = 0
         self._convert_to_rgb()
         shape = self._determine_shape()
         i = Image.open(self.image)
         w, h = i.size
+        LOGGER.debug(f"'{self.image.name}' - shape: {shape}, width: {w}, height: {h}.")
         match shape:
             case ImageShape.Square:
                 if w != CREATOR_WIDTH:
@@ -77,8 +91,9 @@ class CVImage:
                 i.save(self.image)
 
             case _:
-
                 return
+
+        LOGGER.debug("Exiting resize_creator()...")
 
     def resize_resource(self) -> None:  # sourcery skip: extract-duplicate-method, extract-method
         shape = self._determine_shape()

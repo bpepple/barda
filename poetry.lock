@@ -125,6 +125,21 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "esak"
+version = "1.3.2"
+description = "Python wrapper for the Marvel API."
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+marshmallow = ">=3.13.0,<4.0.0"
+requests = ">=2.26.0,<3.0.0"
+
+[package.extras]
+docs = ["sphinx-rtd-theme (>=0.5.2,<0.6.0)"]
+
+[[package]]
 name = "filelock"
 version = "3.8.2"
 description = "A platform independent file lock."
@@ -426,6 +441,17 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "python-dateutil"
+version = "2.8.2"
+description = "Extensions to the standard Python datetime module"
+category = "main"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+
+[package.dependencies]
+six = ">=1.5"
+
+[[package]]
 name = "pyxdg"
 version = "0.28"
 description = "PyXDG contains implementations of freedesktop.org standards in python."
@@ -513,6 +539,14 @@ docs = ["mkdocs (>=1.4.2)", "mkdocs-include-markdown-plugin (>=4.0.3)", "mkdocst
 test = ["pytest (>=7.2.0)", "pytest-cov (>=4.0.0)", "tox (>=3.27.1,<4)", "tox-pyenv (>=1.1.0)"]
 
 [[package]]
+name = "six"
+version = "1.16.0"
+description = "Python 2 and 3 compatibility utilities"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[[package]]
 name = "soupsieve"
 version = "2.3.2.post1"
 description = "A modern CSS selector implementation for Beautiful Soup."
@@ -588,7 +622,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "4f8482287a53bde58321df5235def7bbc2ce3b425f0077c998adf37bf476d689"
+content-hash = "e86dee0a30c3ee55f9003552209cd254c50bbbf28fbf34b6733266d8da5dd9e2"
 
 [metadata.files]
 attrs = [
@@ -692,6 +726,10 @@ coverage = [
 distlib = [
     {file = "distlib-0.3.6-py2.py3-none-any.whl", hash = "sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e"},
     {file = "distlib-0.3.6.tar.gz", hash = "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46"},
+]
+esak = [
+    {file = "esak-1.3.2-py3-none-any.whl", hash = "sha256:0289945acb1bb88b977d9894f25df1b9afb1b687a09fa39f88c0ad287095efab"},
+    {file = "esak-1.3.2.tar.gz", hash = "sha256:fe4e2aafa2aef5cbc1c89dbf821284d5b4c81b565b027ffd0b1ad43cd9d742ce"},
 ]
 filelock = [
     {file = "filelock-3.8.2-py3-none-any.whl", hash = "sha256:8df285554452285f79c035efb0c861eb33a4bcfa5b7a137016e32e6a90f9792c"},
@@ -941,6 +979,10 @@ pytest-cov = [
     {file = "pytest-cov-4.0.0.tar.gz", hash = "sha256:996b79efde6433cdbd0088872dbc5fb3ed7fe1578b68cdbba634f14bb8dd0470"},
     {file = "pytest_cov-4.0.0-py3-none-any.whl", hash = "sha256:2feb1b751d66a8bd934e5edfa2e961d11309dc37b73b0eabe73b5945fee20f6b"},
 ]
+python-dateutil = [
+    {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
+    {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
+]
 pyxdg = [
     {file = "pyxdg-0.28-py2.py3-none-any.whl", hash = "sha256:bdaf595999a0178ecea4052b7f4195569c1ff4d344567bccdc12dfdf02d545ab"},
     {file = "pyxdg-0.28.tar.gz", hash = "sha256:3267bb3074e934df202af2ee0868575484108581e6f3cb006af1da35395e88b4"},
@@ -1005,6 +1047,10 @@ setuptools = [
 simyan = [
     {file = "simyan-0.13.0-py3-none-any.whl", hash = "sha256:18bdb43b6dddc75f24ad828d41c04a2f70ae55b59f98950c50e6df9aa3f8f123"},
     {file = "simyan-0.13.0.tar.gz", hash = "sha256:83323f811b902d58ac48b02c6de0e51c9013ff268014c136a68a57ab7e287c35"},
+]
+six = [
+    {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
+    {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
 soupsieve = [
     {file = "soupsieve-2.3.2.post1-py3-none-any.whl", hash = "sha256:3b2503d3c7084a42b1ebd08116e5f81aadfaea95863628c80a3b774a11b7c759"},

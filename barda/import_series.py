@@ -112,6 +112,7 @@ class ImportSeries:
     def _fix_title_data(title: str | None) -> List[str]:
         LOGGER.debug("Entering fix_title_data()...")
         if title is None or title == "":
+            LOGGER.debug(f"original: {title}; Returning []")
             return []
 
         # Strip any trailing semicolon and change backslash to semicolon,
@@ -158,7 +159,7 @@ class ImportSeries:
     @staticmethod
     def _select_gcd_series(series_lst: List[Any]) -> int | None:
         choices = []
-        for (count, series) in enumerate(series_lst, start=0):
+        for count, series in enumerate(series_lst, start=0):
             choice = questionary.Choice(
                 title=f"{series[1]} ({series[2]}): {series[3]} issues - {series[4]}", value=count
             )
@@ -169,7 +170,7 @@ class ImportSeries:
     @staticmethod
     def _select_gcd_issue(issue_lst: List[Any]) -> int | None:
         choices = []
-        for (count, issue) in enumerate(issue_lst, start=0):
+        for count, issue in enumerate(issue_lst, start=0):
             choice = questionary.Choice(title=f"#{issue[1]}", value=count)
             choices.append(choice)
         choices.append(questionary.Choice(title="None", value=""))
@@ -202,15 +203,17 @@ class ImportSeries:
             stories_list = gcd_obj.get_stories(gcd_issue_id)
             LOGGER.debug(f"gcd_stories: {stories_list}")
             if not stories_list:
+                LOGGER.debug("Returning 'not': []")
                 return []
 
             if len(stories_list) == 1 and not stories_list[0][0]:
+                LOGGER.debug("Returning 'len=1': []")
                 return []
 
             stories = []
             for i in stories_list:
                 story = str(i[0]) if i[0] else "[Untitled]"
-                stories.append(story)
+                stories.append(titlecase(story))
 
             LOGGER.debug(f"Stories: {stories}")
             LOGGER.debug("Exiting get_gcd_stories()...")
@@ -316,6 +319,7 @@ class ImportSeries:
     def _create_credits_list(
         self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
     ) -> List:
+        LOGGER.debug("Entering create_credits_list()...")
         credits_lst = []
         for i in credits:
             if self._bad_creator(i.id_):
@@ -330,6 +334,8 @@ class ImportSeries:
             data = {"issue": issue_id, "creator": creator_id, "role": role_lst}
             credits_lst.append(data)
 
+        LOGGER.debug(f"Credit List: {credits_lst}")
+        LOGGER.debug("Exiting create_credits_list()...")
         return credits_lst
 
     ###################

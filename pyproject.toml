@@ -22,7 +22,7 @@ esak = "^1.3.2"
 python-dateutil = "^2.8.2"
 
 [tool.poetry.group.dev.dependencies]
-black = "^22.12.0"
+black = "^23.0.0"
 pre-commit = "^2.20.0"
 flake8 = "^6.0.0"
 flake8-builtins = "^2.1.0"
@@ -39,7 +39,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 100
-target-version = ['py311']
+target-version = ['py310']
 
 [tool.isort]
 profile = "black"
@@ -47,7 +47,7 @@ multi_line_output = 3
 line_length = 100
 default_section = "THIRDPARTY"
 known_first_party = []
-known_third_party = ["PIL", "bs4", "mokkari", "mysql", "prompt_toolkit", "pytest", "questionary", "ratelimit", "requests", "simyan", "titlecase", "urllib3", "xdg"]
+known_third_party = ["PIL", "bs4", "dateutil", "esak", "mokkari", "mysql", "prompt_toolkit", "pytest", "questionary", "ratelimit", "requests", "simyan", "titlecase", "urllib3", "xdg"]
 
 [tool.coverage.run]
 source = ["barda"]

@@ -3,6 +3,7 @@ from enum import Enum, auto, unique
 import questionary
 
 from barda.import_series import ImportSeries
+from barda.marvel import MarvelNewReleases
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
@@ -13,6 +14,7 @@ from barda.validators import NumberValidator
 class TaskType(Enum):
     Import_Series = auto()
     Update_Resource = auto()
+    Marvel_Releases = auto()
 
 
 class Runner:
@@ -92,12 +94,32 @@ class Runner:
             return True
         return False
 
+    def _has_marvel_credentials(self) -> bool:
+        return bool(self.config.marvel_public_key and self.config.marvel_private_key)
+
+    def _get_marvel_credentials(self) -> bool:
+        answers = questionary.form(
+            public=questionary.text("What is your public key for the Marvel API?"),
+            private=questionary.text("What is your private key for the Marvel API?"),
+            save=questionary.confirm("Would you like to save your Marvel credenttials?"),
+        ).ask()
+        if answers["public"] and answers["private"]:
+            self.config.marvel_public_key = answers["public"]
+            self.config.marvel_private_key = answers["private"]
+            if answers["save"]:
+                self.config.save()
+            return True
+        return False
+
     def run(self) -> None:
         if not self._has_metron_credentials() and not self._get_metron_credentials():
             questionary.print("No Metron credentials provided. Exiting...")
             exit(0)
         if not self._has_cv_credentials() and not self._get_cv_credentials():
             questionary.print("No Comic Vine credentials were provided. Exiting...")
+            exit(0)
+        if not self._has_marvel_credentials() and not self._get_marvel_credentials():
+            questionary.print("No Marvel credentials provided. Exiting...")
             exit(0)
 
         task = self._what_task()
@@ -108,5 +130,8 @@ class Runner:
                         importer_obj.run()
             case TaskType.Update_Resource.value:
                 self._update_resource_key()
+            case TaskType.Marvel_Releases.value:
+                marvel = MarvelNewReleases(self.config)
+                marvel.run()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

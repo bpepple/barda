@@ -12,6 +12,12 @@ from urllib3 import Retry
 from barda import __version__, exceptions
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+handler = logging.FileHandler("barda.log")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+handler.setFormatter(formatter)
+LOGGER.addHandler(handler)
+
 ONE_MINUTE = 60
 
 
@@ -41,6 +47,7 @@ class PostData:
             i = ""
             files = None
 
+        LOGGER.debug(f"post() data: {data}")
         try:
             session = requests.Session()
             retry = Retry(connect=3, backoff_factor=0.5)
@@ -76,6 +83,8 @@ class PostData:
             "User-Agent": f"Barda/{__version__} ({platform.system()}; {platform.release()})",
             "Content-Type": "application/json",
         }
+
+        LOGGER.debug(f"post_credits data: {data}")
 
         try:
             session = requests.Session()

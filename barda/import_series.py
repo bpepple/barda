@@ -155,6 +155,20 @@ class ImportSeries:
             )
         return metron_id
 
+    def _check_metron_for_series(self, series: VolumeEntry) -> str | None:
+        if series_lst := self.mokkari.series_list({"name": series.name}):
+            choices: List[questionary.Choice] = []
+            for i in series_lst:
+                choice = questionary.Choice(title=i.display_name, value=i.id)
+                choices.append(choice)
+            choices.append(questionary.Choice(title="None", value=""))
+            return questionary.select(
+                f"What series on Metron should be used for '{series.name} ({series.start_year})'?",
+                choices=choices,
+            ).ask()
+        else:
+            return None
+
     # GCD methods
     @staticmethod
     def _select_gcd_series(series_lst: List[Any]) -> int | None:
@@ -693,29 +707,42 @@ class ImportSeries:
     ###############
     # Series Type #
     ###############
-    def _choose_series_type(self):  # sourcery skip: class-extract-method
+    def _choose_series_type(self) -> int:  # sourcery skip: class-extract-method
         st_lst: SeriesTypeList = self.mokkari.series_type_list()
         choices = []
         for s in st_lst:
             choice = questionary.Choice(title=s.name, value=s.id)
             choices.append(choice)
-        return questionary.select("What type of series is this?", choices=choices).ask()
+        return int(questionary.select("What type of series is this?", choices=choices).ask())
 
     #############
     # Publisher #
     #############
-    def _choose_publisher(self):
+    def _choose_publisher(self) -> int:
         pub_lst: PublishersList = self.mokkari.publishers_list()
         choices = []
         for p in pub_lst:
             choice = questionary.Choice(title=p.name, value=p.id)
             choices.append(choice)
         # TODO: Provide option to add a Publisher
-        return questionary.select("Which publisher is this series from?", choices=choices).ask()
+        return int(
+            questionary.select("Which publisher is this series from?", choices=choices).ask()
+        )
 
     ##########
     # Series #
     ##########
+    @staticmethod
+    def _create_series_choices(results) -> List[questionary.Choice]:
+        choices = []
+        for s in results:
+            choice = questionary.Choice(
+                title=f"{s.name} ({s.start_year}) - {s.issue_count} issues", value=s
+            )
+            choices.append(choice)
+        choices.append(questionary.Choice(title="Skip", value=""))
+        return choices
+
     def _what_series(self) -> VolumeEntry | None:
         series = questionary.text("What series do you want to import?").ask()
         try:
@@ -734,36 +761,65 @@ class ImportSeries:
         if not results:
             return None
 
-        choices = []
-        for s in results:
-            choice = questionary.Choice(
-                title=f"{s.name} ({s.start_year}) - {s.issue_count} issues", value=s
-            )
-            choices.append(choice)
-        choices.append(questionary.Choice(title="Skip", value=""))
+        choices = self._create_series_choices(results)
 
         return questionary.select("Which series to import", choices=choices).ask()
 
-    def _check_series_exist(self, series: VolumeEntry) -> bool:
-        params = {"name": series.name, "year_began": series.start_year}
-        return bool(self.mokkari.series_list(params=params))
+    @staticmethod
+    def _determine_series_year_began(start_year: int | None) -> int:
+        if start_year is not None:
+            return (
+                start_year
+                if questionary.confirm(
+                    f"Is '{start_year}' the correct year that this series began?"
+                ).ask()
+                else int(
+                    questionary.text(
+                        "What begin year should be used for this series?",
+                        validate=YearValidator,
+                    ).ask()
+                )
+            )
+        else:
+            return int(
+                questionary.text(
+                    "No begin year found. What begin year should be used for this series?",
+                    validate=YearValidator,
+                ).ask()
+            )
 
-    def _create_series(self, cv_series: VolumeEntry) -> int:
+    @staticmethod
+    def _determine_series_year_end(series_type_id: int) -> int | None:
+        return (
+            int(questionary.text("What year did this series end in?", validate=YearValidator).ask())
+            if series_type_id in {11, 2}
+            else None
+        )
+
+    @staticmethod
+    def _determine_series_name(series_name: str) -> str:
+        return (
+            series_name
+            if questionary.confirm(f"Is '{series_name}' the correct name?").ask()
+            else questionary.text("What should the series name be?").ask()
+        )
+
+    @staticmethod
+    def _determine_series_sort_name(series_name: str) -> str:
+        return (
+            series_name
+            if questionary.confirm(f"Should '{series_name}' also be the Sort Name?").ask()
+            else questionary.text("What should the sort name be?").ask()
+        )
+
+    def _ask_for_series_info(self, cv_series: VolumeEntry) -> dict[str, Any]:
         display_name = f"{cv_series.name} ({cv_series.start_year})"
         questionary.print(
             f"Series '{display_name}' needs to be created on Metron",
             style=Styles.TITLE,
         )
-        series_name = (
-            cv_series.name
-            if questionary.confirm(f"Is '{cv_series.name}' the correct name?").ask()
-            else questionary.text("What should the series name be?").ask()
-        )
-        sort_name = (
-            series_name
-            if questionary.confirm(f"Should '{series_name}' also be the Sort Name?").ask()
-            else questionary.text("What should the sort name be?").ask()
-        )
+        series_name = self._determine_series_name(cv_series.name)
+        sort_name = self._determine_series_sort_name(series_name)
         volume = int(
             questionary.text(
                 f"What is the volume number for '{display_name}'?", validate=NumberValidator
@@ -771,26 +827,13 @@ class ImportSeries:
         )
         publisher_id = self._choose_publisher()
         series_type_id = self._choose_series_type()
-        year_began = (
-            cv_series.start_year
-            if questionary.confirm(
-                f"Is '{cv_series.start_year}' the correct year that this series began?"
-            ).ask()
-            else int(
-                questionary.text(
-                    "What begin year should be used for this series?", validate=YearValidator
-                ).ask()
-            )
-        )
-        if series_type_id in [11, 2]:
-            year_end = int(
-                questionary.text("What year did this series end in?", validate=YearValidator).ask()
-            )
-        else:
-            year_end = None
-        desc = questionary.text(f"Do you want to add a series summary for '{display_name}'?").ask()
+        year_began = self._determine_series_year_began(cv_series.start_year)
+        year_end = self._determine_series_year_end(series_type_id)
+        desc: str = questionary.text(
+            f"Do you want to add a series summary for '{display_name}'?"
+        ).ask()
 
-        data = {
+        return {
             "name": series_name,
             "sort_name": sort_name,
             "volume": volume,
@@ -803,11 +846,14 @@ class ImportSeries:
             "associated": [],
         }
 
+    def _create_series(self, cv_series: VolumeEntry) -> int:
+        data = self._ask_for_series_info(cv_series)
+
         try:
             new_series = self.barda.post_series(data)
         except ApiError:
             questionary.print(
-                f"Failed to create series for '{series_name}'. Exiting...", style=Styles.ERROR
+                f"Failed to create series for '{data['name']}'. Exiting...", style=Styles.ERROR
             )
             exit(0)
 
@@ -881,21 +927,25 @@ class ImportSeries:
 
         return resp
 
+    def _get_series_id(self, series) -> int:
+        mseries_id = self._check_metron_for_series(series)
+        return (
+            self._create_series(series) if not mseries_id or mseries_id is None else int(mseries_id)
+        )
+
+    def _get_gcd_series_id(self):
+        with DB() as db_obj:
+            gcd_query = questionary.text("What series name do you want to use to search GCD?").ask()
+            if gcd_series_list := db_obj.get_series_list(gcd_query):
+                gcd_idx = self._select_gcd_series(gcd_series_list)
+                gcd_series_id = None if gcd_idx is None else gcd_series_list[gcd_idx][0]
+            else:
+                questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
+                gcd_series_id = None
+        return gcd_series_id
+
     def run(self) -> None:
         if series := self._what_series():
-            # TODO: Ask if we to use existing series
-            new_series_id = self._create_series(series)
-            with DB() as db_obj:
-                gcd_query = questionary.text(
-                    "What series name do you want to use to search GCD?"
-                ).ask()
-                if gcd_series_list := db_obj.get_series_list(gcd_query):
-                    gcd_idx = self._select_gcd_series(gcd_series_list)
-                    gcd_series_id = None if gcd_idx is None else gcd_series_list[gcd_idx][0]
-                else:
-                    questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
-                    gcd_series_id = None
-
             try:
                 i_list = self.simyan.issue_list(
                     params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
@@ -907,23 +957,33 @@ class ImportSeries:
                 )
                 return None
 
-            if i_list:
-                for i in i_list:
-                    try:
-                        cv_issue = self.simyan.issue(i.issue_id)
-                    except ServiceError:
-                        questionary.print(
-                            f"Failed to retrieve information from Comic Vine for Issue: {i.volume.name} #{i.number}.",
-                            style=Styles.ERROR,
-                        )
-                        return None
+            series_id = self._get_series_id(series)
+            gcd_series_id = self._get_gcd_series_id()
 
-                    new_issue = self._create_issue(new_series_id, cv_issue, gcd_series_id)
-                    if new_issue is not None:
-                        questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
+            for i in i_list:
+                try:
+                    cv_issue = self.simyan.issue(i.issue_id)
+                except ServiceError:
+                    questionary.print(
+                        f"Failed to retrieve information from Comic Vine for Issue: {i.volume.name} #{i.number}. Skipping...",
+                        style=Styles.ERROR,
+                    )
+                    continue
+
+                if cv_issue and cv_issue.number is not None:
+                    if not self.mokkari.issues_list(
+                        params={"series_id": series_id, "number": cv_issue.number}
+                    ):
+                        new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)
+                        if new_issue is not None:
+                            questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
+                        else:
+                            questionary.print(
+                                f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
+                            )
                     else:
                         questionary.print(
-                            f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
+                            f"{cv_issue.volume.name} #{cv_issue.number} already exists. Skipping..."
                         )
         else:
             print("Nothing found")

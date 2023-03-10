@@ -58,6 +58,34 @@ class CV_Creator(Enum):
     Jim_Shooter = 40450
 
 
+@unique
+class Ignore_Characters(Enum):
+    Abraham_Lincoln = 14131
+    Barack_Obama = 56661
+    Bill_Clinton = 11570
+    George_H_W_Bush = 9957
+    George_W_Bush = 4660
+    Santa_Claus = 22143
+    Stan_Lee = 3115
+    Tom_DeFalco = 11901
+
+
+@unique
+class Ignore_Creators(Enum):
+    Typeset = 67476
+
+
+@unique
+class Ignore_Teams(Enum):
+    Cavemen = 57593
+    Communists = 56975
+    Dinosaurs = 56551
+    Special_Air_Service = 57233
+    United_States_Air_Force = 44417
+    United_States_Navy = 44418
+    United_States_Special_Forces = 55045
+
+
 class ImportSeries:
     def __init__(self, config: BardaSettings) -> None:
         self.config = config
@@ -82,6 +110,10 @@ class ImportSeries:
             return datetime.date(orig_date.year, orig_date.month, 1)
         else:
             return orig_date
+
+    @staticmethod
+    def _ignore_resource(resource, cv_id: int) -> bool:
+        return any(cv_id == i.value for i in resource)
 
     def _get_image(self, url: str, img_type: ImageType) -> str:
         LOGGER.debug("Entering get_image()...")
@@ -237,12 +269,6 @@ class ImportSeries:
     # Handle Credits #
     ##################
     @staticmethod
-    def _bad_creator(cv_id: int) -> bool:
-        # Typeset creator
-        bad_creator_id = [67476]
-        return cv_id in bad_creator_id
-
-    @staticmethod
     def _get_joe_quesada_role(cover_date: datetime.date) -> List[str]:
         if cover_date >= datetime.date(2011, 4, 1):
             return ["chief creative officer"]
@@ -336,7 +362,7 @@ class ImportSeries:
         LOGGER.debug("Entering create_credits_list()...")
         credits_lst = []
         for i in credits:
-            if self._bad_creator(i.id_):
+            if self._ignore_resource(Ignore_Creators, i.id_):
                 continue
             person = GenericEntry(id=i.id_, name=i.name, api_detail_url="")
             creator_id = self.conversions.get(Resources.Creator.value, i.id_)
@@ -389,6 +415,9 @@ class ImportSeries:
             resp = self.barda.post_creator(data)
         except ApiError:
             questionary.print(f"Failed to create creator: '{name}'.", style=Styles.ERROR)
+            return None
+
+        if resp is None:
             return None
 
         self.conversions.store(Resources.Creator.value, cv_data.creator_id, resp["id"])
@@ -479,6 +508,9 @@ class ImportSeries:
             questionary.print(f"Fail to create story arc for '{name}'.", style=Styles.ERROR)
             return None
 
+        if resp is None:
+            return None
+
         self.conversions.store(Resources.Arc.value, cv_data.story_arc_id, resp["id"])
         questionary.print(f"Add '{name}' to {Resources.Arc.name} conversions", style=Styles.SUCCESS)
         return resp["id"]
@@ -558,6 +590,9 @@ class ImportSeries:
             questionary.print(f"Failed to create team for '{name}'.", style=Styles.ERROR)
             return None
 
+        if resp is None:
+            return None
+
         self.conversions.store(Resources.Team.value, cv_data.team_id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Team.name}  conversions", style=Styles.SUCCESS
@@ -600,6 +635,8 @@ class ImportSeries:
     def _create_team_list(self, teams: List[GenericEntry]) -> List[int]:
         team_lst = []
         for team in teams:
+            if self._ignore_resource(Ignore_Teams, team.id_):
+                continue
             metron_id = self.conversions.get(Resources.Team.value, team.id_)
             if metron_id is None:
                 metron_id = self._search_for_team(team)
@@ -644,6 +681,9 @@ class ImportSeries:
             resp = self.barda.post_character(data)
         except ApiError:
             questionary.print(f"Failed to create character for '{name}'.", style=Styles.ERROR)
+            return None
+
+        if resp is None:
             return None
 
         self.conversions.store(Resources.Character.value, cv_data.character_id, resp["id"])
@@ -696,6 +736,8 @@ class ImportSeries:
     def _create_character_list(self, characters: List[GenericEntry]) -> List[int]:
         character_lst = []
         for character in characters:
+            if self._ignore_resource(Ignore_Characters, character.id_):
+                continue
             metron_id = self.conversions.get(Resources.Character.value, character.id_)
             if metron_id is None:
                 metron_id = self._search_for_character(character)
@@ -846,7 +888,7 @@ class ImportSeries:
             "associated": [],
         }
 
-    def _create_series(self, cv_series: VolumeEntry) -> int:
+    def _create_series(self, cv_series: VolumeEntry) -> int | None:
         data = self._ask_for_series_info(cv_series)
 
         try:
@@ -857,7 +899,7 @@ class ImportSeries:
             )
             exit(0)
 
-        return new_series["id"]
+        return None if new_series is None else new_series["id"]
 
     #########
     # Issue #
@@ -918,6 +960,9 @@ class ImportSeries:
         except ApiError:
             return None
 
+        if resp is None:
+            return None
+
         credits_lst = self._create_credits_list(resp["id"], cover_date, cv_issue.creators)
         try:
             self.barda.post_credit(credits_lst)
@@ -927,7 +972,7 @@ class ImportSeries:
 
         return resp
 
-    def _get_series_id(self, series) -> int:
+    def _get_series_id(self, series) -> int | None:
         mseries_id = self._check_metron_for_series(series)
         return (
             self._create_series(series) if not mseries_id or mseries_id is None else int(mseries_id)
@@ -958,6 +1003,10 @@ class ImportSeries:
                 return None
 
             series_id = self._get_series_id(series)
+            if series_id is None:
+                questionary.print("Unable to get Series ID. Exiting...", style=Styles.ERROR)
+                exit(0)
+
             gcd_series_id = self._get_gcd_series_id()
 
             for i in i_list:

@@ -61,11 +61,25 @@ class CV_Creator(Enum):
 @unique
 class Ignore_Characters(Enum):
     Abraham_Lincoln = 14131
+    Adolf_Hitler = 9671
+    Arjuna = 26052
     Barack_Obama = 56661
     Bill_Clinton = 11570
+    Del_Close = 96033
+    Donald_Trump = 17028
+    Frank_Belknap_Long = 142839
+    Genghis_Khan = 37303
     George_H_W_Bush = 9957
     George_W_Bush = 4660
+    H_P_Lovecraft = 10641
+    John_Ostrander = 96034
+    Krishna = 44322
+    L_Ron_Hubbard = 96035
+    Lash_LaRue = 75444
+    Nelson_Mandela = 19799
+    P_W_Botha = 173183
     Santa_Claus = 22143
+    Sonia_Haft_Greene = 142844
     Stan_Lee = 3115
     Tom_DeFalco = 11901
 

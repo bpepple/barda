@@ -76,6 +76,7 @@ class Ignore_Characters(Enum):
     Krishna = 44322
     L_Ron_Hubbard = 96035
     Lash_LaRue = 75444
+    Lyndon_Johnson = 38601
     Nelson_Mandela = 19799
     P_W_Botha = 173183
     Santa_Claus = 22143
@@ -94,6 +95,8 @@ class Ignore_Teams(Enum):
     Cavemen = 57593
     Communists = 56975
     Dinosaurs = 56551
+    Father_and_Daughter = 57450
+    Justice_Forever = 57862
     Special_Air_Service = 57233
     United_States_Air_Force = 44417
     United_States_Navy = 44418
@@ -938,6 +941,8 @@ class ImportSeries:
         else:
             stories = self._fix_title_data(cv_issue.name)
 
+        LOGGER.debug(f"Stories is List: {isinstance(stories, List)}")
+
         cleaned_desc = cleanup_html(cv_issue.description, True)
         character_lst = self._create_character_list(cv_issue.characters)
         team_lst = self._create_team_list(cv_issue.teams)
@@ -953,6 +958,7 @@ class ImportSeries:
             price = None
             pages = None
             rating = Rating.Unknown.value
+
         data = {
             "series": series_id,
             "number": cv_issue.number,

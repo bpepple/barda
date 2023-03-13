@@ -108,7 +108,7 @@ class MarvelNewReleases:
     ##########
     # Series #
     ##########
-    def _create_series(self, name: str, year: int) -> int:
+    def _create_series(self, name: str, year: int) -> int | None:
         series_name = (
             name
             if questionary.confirm(f"Is '{name}' the correct name?").ask()
@@ -163,15 +163,15 @@ class MarvelNewReleases:
             )
             exit(0)
 
-        return new_series["id"]
+        return None if new_series is None else new_series["id"]
 
-    def _create_issue(self, series_id: int, comic):
+    def _create_issue(self, series_id: int, comic, add_cover: bool):
         cover_date = self._determine_cover_date(comic.dates.on_sale)
         desc = ""
         if solicit := self._check_for_solicit_txt(comic.text_objects):
             desc = solicit
         price = comic.prices.print if comic.prices.print > Decimal("0.00") else None
-        if comic.images:
+        if add_cover and comic.images:
             cover = self._get_cover(comic.images[0], ImageType.Cover)
         else:
             cover = ""
@@ -199,15 +199,22 @@ class MarvelNewReleases:
         except ApiError:
             return None
 
+        if resp is None:
+            return None
+
         self._add_ceb_credits(resp["id"])
 
         return resp
 
     def run(self) -> None:
-        release_str = questionary.text(
-            "What is the first day of the week you want to search for? (Ex. 2022-12-21)"
+        answers = questionary.form(
+            release=questionary.text(
+                "What is the first day of the week you want to search for? (Ex. 2022-12-21)"
+            ),
+            cover=questionary.confirm("Do you want to download covers from Marvel?"),
         ).ask()
-        start_date = datetime.strptime(release_str, "%Y-%m-%d").date()
+
+        start_date = datetime.strptime(answers["release"], "%Y-%m-%d").date()
         end_date = start_date + relativedelta.relativedelta(days=6)
 
         # Get data from Marvel
@@ -233,6 +240,7 @@ class MarvelNewReleases:
                 ).ask()
             else:
                 series_id = ""
+
             if not series_id:
                 if questionary.confirm(
                     f"Nothing found for '{series_name}'. Do you want to create a new series?"
@@ -241,6 +249,13 @@ class MarvelNewReleases:
                 else:
                     questionary.print("Ok, continuing to next comic...", style=Styles.SUCCESS)
                     continue
+
+            if series_id is None:
+                questionary.print(
+                    f"Unable to add '{series_name} ({series_year})'. Skipping...",
+                    style=Styles.WARNING,
+                )
+                continue
 
             # Check if issue exists and if not add it.
             if self.metron.issues_list(
@@ -251,7 +266,7 @@ class MarvelNewReleases:
                     style=Styles.WARNING,
                 )
             else:
-                new_issue = self._create_issue(series_id, comic)
+                new_issue = self._create_issue(series_id, comic, answers["cover"])
                 if new_issue is not None:
                     questionary.print(
                         f"Added '{series_name} #{comic.issue_number}'", style=Styles.SUCCESS

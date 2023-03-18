@@ -65,9 +65,13 @@ class Ignore_Characters(Enum):
     Arjuna = 26052
     Barack_Obama = 56661
     Bill_Clinton = 11570
+    Conquest = 27703
+    Death = 9632
     Del_Close = 96033
     Donald_Trump = 17028
+    Famine = 22657
     Frank_Belknap_Long = 142839
+    Franklin_D_Roosevelt = 31595
     Genghis_Khan = 37303
     George_H_W_Bush = 9957
     George_W_Bush = 4660
@@ -82,7 +86,9 @@ class Ignore_Characters(Enum):
     Santa_Claus = 22143
     Sonia_Haft_Greene = 142844
     Stan_Lee = 3115
+    Titania = 21031
     Tom_DeFalco = 11901
+    War = 13083
 
 
 @unique
@@ -109,8 +115,8 @@ class ImportSeries:
         cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
         metron_cache = sql_cache(str(config.metron_cache), 1) if config.metron_cache else None
 
-        self.simyan = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
-        self.mokkari: Session = m_api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
+        self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
+        self.metron: Session = m_api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
         self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ResourceKeys(str(config.conversions))
         self.image_dir = TemporaryDirectory()
@@ -205,7 +211,7 @@ class ImportSeries:
         return metron_id
 
     def _check_metron_for_series(self, series: VolumeEntry) -> str | None:
-        if series_lst := self.mokkari.series_list({"name": series.name}):
+        if series_lst := self.metron.series_list({"name": series.name}):
             choices: List[questionary.Choice] = []
             for i in series_lst:
                 choice = questionary.Choice(title=i.display_name, value=i.id)
@@ -361,7 +367,7 @@ class ImportSeries:
             role_lst = creator.roles.split(", ")
             role_lst = self._fix_role_list(role_lst)
 
-        metron_role_lst = self.mokkari.role_list()
+        metron_role_lst = self.metron.role_list()
         roles = []
         for i in role_lst:
             roles.extend(
@@ -401,7 +407,7 @@ class ImportSeries:
     def _create_creator(self, cv_id: int) -> int | None:
         LOGGER.debug("Entering create_creator()...")
         try:
-            cv_data = self.simyan.creator(cv_id)
+            cv_data = self.cv.creator(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Creator ID: {cv_id}.",
@@ -452,7 +458,7 @@ class ImportSeries:
         questionary.print(
             f"Let's do a creator search on Metron for '{creator.name}'", style=Styles.TITLE
         )
-        c_list = self.mokkari.creators_list(params={"name": creator.name})
+        c_list = self.metron.creators_list(params={"name": creator.name})
         choices = self._create_choices(c_list)
         if choices is None:
             questionary.print(f"Nothing found for '{creator.name}'", style=Styles.WARNING)
@@ -463,7 +469,7 @@ class ImportSeries:
             f"Do want to use another name to search for '{creator.name}'?"
         ).ask():
             txt = questionary.text(f"What name do you want to search for '{creator.name}'?").ask()
-            lst = self.mokkari.creators_list(params={"name": txt})
+            lst = self.metron.creators_list(params={"name": txt})
             new_choices = self._create_choices(lst)
             if new_choices is None:
                 questionary.print(f"Nothing found for '{creator.name}'", style=Styles.WARNING)
@@ -502,7 +508,7 @@ class ImportSeries:
     ###############
     def _create_arc(self, cv_id: int) -> int | None:
         try:
-            cv_data = self.simyan.story_arc(cv_id)
+            cv_data = self.cv.story_arc(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Story Arc ID: {cv_id}.",
@@ -539,7 +545,7 @@ class ImportSeries:
         questionary.print(
             f"Let's do a story arc search on Metron for '{arc.name}'", style=Styles.TITLE
         )
-        arc_lst = self.mokkari.arcs_list(params={"name": arc.name})
+        arc_lst = self.metron.arcs_list(params={"name": arc.name})
         choices = self._create_choices(arc_lst)
         if choices is None:
             questionary.print(f"Nothing found for '{arc.name}'", style=Styles.WARNING)
@@ -548,7 +554,7 @@ class ImportSeries:
 
         if questionary.confirm(f"Do want to use another name to search for '{arc.name}'?").ask():
             txt = questionary.text(f"What name do you want to search for '{arc.name}'?").ask()
-            lst = self.mokkari.arcs_list(params={"name": txt})
+            lst = self.metron.arcs_list(params={"name": txt})
             new_choices = self._create_choices(lst)
             if new_choices is None:
                 questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
@@ -583,7 +589,7 @@ class ImportSeries:
     ################
     def _create_team(self, cv_id: int) -> int | None:
         try:
-            cv_data = self.simyan.team(cv_id)
+            cv_data = self.cv.team(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Team ID: {cv_id}.",
@@ -621,7 +627,7 @@ class ImportSeries:
             return None
 
         questionary.print(f"Let's do a team search on Metron for '{team.name}'", style=Styles.TITLE)
-        team_lst: TeamsList = self.mokkari.teams_list(params={"name": team.name})
+        team_lst: TeamsList = self.metron.teams_list(params={"name": team.name})
         choices = self._create_choices(team_lst)
         if choices is None:
             questionary.print(f"Nothing found for '{team.name}'", style=Styles.WARNING)
@@ -630,7 +636,7 @@ class ImportSeries:
 
         if questionary.confirm(f"Do want to use another name to search for '{team.name}'?").ask():
             txt = questionary.text(f"What name do you want to search for '{team.name}'?").ask()
-            lst = self.mokkari.teams_list(params={"name": txt})
+            lst = self.metron.teams_list(params={"name": txt})
             new_choices = self._create_choices(lst)
             if new_choices is None:
                 questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
@@ -667,7 +673,7 @@ class ImportSeries:
     #####################
     def _create_character(self, cv_id: int) -> int | None:
         try:
-            cv_data = self.simyan.character(cv_id)
+            cv_data = self.cv.character(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Character ID: {cv_id}.",
@@ -716,7 +722,7 @@ class ImportSeries:
         questionary.print(
             f"Let's do a character search on Metron for '{character.name}'", style=Styles.TITLE
         )
-        c_list = self.mokkari.characters_list(params={"name": character.name})
+        c_list = self.metron.characters_list(params={"name": character.name})
         choices = self._create_choices(c_list)
         if choices is None:
             questionary.print(f"Nothing found for '{character.name}'", style=Styles.WARNING)
@@ -727,7 +733,7 @@ class ImportSeries:
             f"Do want to use another name to search for '{character.name}'?"
         ).ask():
             txt = questionary.text(f"What name do you want to search for '{character.name}'?").ask()
-            lst = self.mokkari.characters_list(params={"name": txt})
+            lst = self.metron.characters_list(params={"name": txt})
             new_choices = self._create_choices(lst)
             if new_choices is None:
                 questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
@@ -767,7 +773,7 @@ class ImportSeries:
     # Series Type #
     ###############
     def _choose_series_type(self) -> int:  # sourcery skip: class-extract-method
-        st_lst: SeriesTypeList = self.mokkari.series_type_list()
+        st_lst: SeriesTypeList = self.metron.series_type_list()
         choices = []
         for s in st_lst:
             choice = questionary.Choice(title=s.name, value=s.id)
@@ -778,7 +784,7 @@ class ImportSeries:
     # Publisher #
     #############
     def _choose_publisher(self) -> int:
-        pub_lst: PublishersList = self.mokkari.publishers_list()
+        pub_lst: PublishersList = self.metron.publishers_list()
         choices = []
         for p in pub_lst:
             choice = questionary.Choice(title=p.name, value=p.id)
@@ -805,7 +811,7 @@ class ImportSeries:
     def _what_series(self) -> VolumeEntry | None:
         series = questionary.text("What series do you want to import?").ask()
         try:
-            results = self.simyan.volume_list(
+            results = self.cv.volume_list(
                 params={
                     "filter": f"name:{series}",
                 }
@@ -1012,7 +1018,7 @@ class ImportSeries:
     def run(self) -> None:
         if series := self._what_series():
             try:
-                i_list = self.simyan.issue_list(
+                i_list = self.cv.issue_list(
                     params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
                 )
             except ServiceError:
@@ -1031,7 +1037,7 @@ class ImportSeries:
 
             for i in i_list:
                 try:
-                    cv_issue = self.simyan.issue(i.issue_id)
+                    cv_issue = self.cv.issue(i.issue_id)
                 except ServiceError:
                     questionary.print(
                         f"Failed to retrieve information from Comic Vine for Issue: {i.volume.name} #{i.number}. Skipping...",
@@ -1040,7 +1046,7 @@ class ImportSeries:
                     continue
 
                 if cv_issue and cv_issue.number is not None:
-                    if not self.mokkari.issues_list(
+                    if not self.metron.issues_list(
                         params={"series_id": series_id, "number": cv_issue.number}
                     ):
                         new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)

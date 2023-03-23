@@ -56,6 +56,7 @@ class CV_Creator(Enum):
     CB_Cebulski = 43193
     Axel_Alonso = 23115
     Jim_Shooter = 40450
+    Mike_Richardson = 45055
 
 
 @unique
@@ -120,6 +121,7 @@ class ImportSeries:
         self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ResourceKeys(str(config.conversions))
         self.image_dir = TemporaryDirectory()
+        self.add_characters = False
 
     def __enter__(self):
         return self
@@ -333,6 +335,8 @@ class ImportSeries:
                 return self._get_axel_alonso_role(cover_date)
             case CV_Creator.Jim_Shooter.value:
                 return self._get_jim_shooter_role(cover_date)
+            case CV_Creator.Mike_Richardson.value:
+                return ["publisher"]
             case _:
                 return []
 
@@ -950,7 +954,9 @@ class ImportSeries:
         LOGGER.debug(f"Stories is List: {isinstance(stories, List)}")
 
         cleaned_desc = cleanup_html(cv_issue.description, True)
-        character_lst = self._create_character_list(cv_issue.characters)
+        character_lst = (
+            self._create_character_list(cv_issue.characters) if self.add_characters else []
+        )
         team_lst = self._create_team_list(cv_issue.teams)
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
         img = self._get_image(cv_issue.image.original, ImageType.Cover)
@@ -1034,6 +1040,10 @@ class ImportSeries:
                 exit(0)
 
             gcd_series_id = self._get_gcd_series_id()
+
+            self.add_characters: bool = questionary.confirm(
+                "Do you want to add characters for this series?"
+            ).ask()
 
             for i in i_list:
                 try:

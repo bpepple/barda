@@ -110,6 +110,25 @@ class Ignore_Teams(Enum):
     United_States_Special_Forces = 55045
 
 
+@unique
+class Metron_Genres(Enum):
+    Adult = 1
+    Crime = 13
+    Espionage = 2
+    Fantasy = 3
+    Historical = 4
+    Horror = 5
+    Humor = 6
+    Manga = 7
+    Parody = 14
+    Romance = 8
+    Science_Fiction = 9
+    Sport = 15
+    Super_Hero = 10
+    War = 11
+    Western = 12
+
+
 class ImportSeries:
     def __init__(self, config: BardaSettings) -> None:
         self.config = config
@@ -784,6 +803,16 @@ class ImportSeries:
             choices.append(choice)
         return int(questionary.select("What type of series is this?", choices=choices).ask())
 
+    #########
+    # Genre #
+    #########
+    def _choose_genre(self) -> int:
+        choices = []
+        for i in Metron_Genres:
+            choice = questionary.Choice(title=i.name, value=i.value)
+            choices.append(choice)
+        return int(questionary.select("What genre should this series be?", choices=choices).ask())
+
     #############
     # Publisher #
     #############
@@ -898,6 +927,7 @@ class ImportSeries:
         series_type_id = self._choose_series_type()
         year_began = self._determine_series_year_began(cv_series.start_year)
         year_end = self._determine_series_year_end(series_type_id)
+        genres: List[int] = [self._choose_genre()]
         desc: str = questionary.text(
             f"Do you want to add a series summary for '{display_name}'?"
         ).ask()
@@ -911,7 +941,7 @@ class ImportSeries:
             "publisher": publisher_id,
             "year_began": year_began,
             "year_end": year_end,
-            "genres": [],
+            "genres": genres,
             "associated": [],
         }
 

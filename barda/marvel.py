@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import questionary
 import requests
@@ -29,6 +29,23 @@ class MarvelNewReleases:
         self.metron = metron(config.metron_user, config.metron_password)
         self.barda = PostData(config.metron_user, config.metron_password)
         self.image_dir = TemporaryDirectory()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.image_dir.cleanup()
+
+    @staticmethod
+    def _create_choices(item) -> List[questionary.Choice] | None:
+        if not item:
+            return None
+        choices: List[questionary.Choice] = []
+        for i in item:
+            choice = questionary.Choice(title=i.name, value=i.id)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return choices
 
     @staticmethod
     def _determine_cover_date(release_date: date) -> date:
@@ -93,6 +110,36 @@ class MarvelNewReleases:
                 return ""
 
         return str(img_file)
+
+    ##############
+    # Characters #
+    ##############
+    def _search_for_character(self, character) -> int | None:
+        if not character.name:
+            return None
+
+        questionary.print(
+            f"Let's do a character search on Metron for '{character.name}'", style=Styles.TITLE
+        )
+        c_list = self.metron.characters_list(params={"name": character.name})
+        choices = self._create_choices(c_list)
+        if choices is None:
+            questionary.print(f"Nothing found for '{character.name}'", style=Styles.WARNING)
+            return None
+
+        answer = questionary.select(
+            f"What character should be added for '{character.name}'?", choices=choices
+        ).ask()
+        return answer or None
+
+    def _create_characters_list(self, characters) -> List[int]:
+        character_lst = []
+        for character in characters:
+            metron_id = self._search_for_character(character)
+            if not metron_id or metron_id is None:
+                continue
+            character_lst.append(metron_id)
+        return character_lst
 
     ###############
     # Series Type #
@@ -165,13 +212,17 @@ class MarvelNewReleases:
 
         return None if new_series is None else new_series["id"]
 
-    def _create_issue(self, series_id: int, comic, add_cover: bool):
+    def _create_issue(self, series_id: int, comic, answers: Dict[str, Any]):
         cover_date = self._determine_cover_date(comic.dates.on_sale)
         desc = ""
         if solicit := self._check_for_solicit_txt(comic.text_objects):
             desc = solicit
         price = comic.prices.print if comic.prices.print > Decimal("0.00") else None
-        if add_cover and comic.images:
+        if answers["characters"] and comic.characters:
+            characters_lst = self._create_characters_list(comic.characters)
+        else:
+            characters_lst = []
+        if answers["cover"] and comic.images:
             cover = self._get_cover(comic.images[0], ImageType.Cover)
         else:
             cover = ""
@@ -189,7 +240,7 @@ class MarvelNewReleases:
             "page": comic.page_count,
             "rating": Rating.Unknown.value,
             "image": cover,
-            "characters": [],
+            "characters": characters_lst,
             "teams": [],
             "arcs": [],
         }
@@ -212,6 +263,7 @@ class MarvelNewReleases:
                 "What is the first day of the week you want to search for? (Ex. 2022-12-21)"
             ),
             cover=questionary.confirm("Do you want to download covers from Marvel?"),
+            characters=questionary.confirm("Do you want to add characters"),
         ).ask()
 
         start_date = datetime.strptime(answers["release"], "%Y-%m-%d").date()
@@ -266,7 +318,7 @@ class MarvelNewReleases:
                     style=Styles.WARNING,
                 )
             else:
-                new_issue = self._create_issue(series_id, comic, answers["cover"])
+                new_issue = self._create_issue(series_id, comic, answers)
                 if new_issue is not None:
                     questionary.print(
                         f"Added '{series_name} #{comic.issue_number}'", style=Styles.SUCCESS

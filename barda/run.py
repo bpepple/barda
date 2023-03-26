@@ -14,6 +14,7 @@ from barda.validators import NumberValidator
 class TaskType(Enum):
     Import_Series = auto()
     Update_Resource = auto()
+    Delete_Resource = auto()
     Marvel_Releases = auto()
 
 
@@ -46,6 +47,20 @@ class Runner:
         conv = ResourceKeys(str(self.config.conversions))
         conv.edit(resource, cv_id, metron_id)
         questionary.print(f"Updated CV ID: {cv_id}", style=Styles.SUCCESS)
+
+    def _delete_resource_key(self) -> None:
+        resource = self._select_resource()
+        cv_id = int(
+            questionary.text(
+                "What is the Comic Vine ID for the resource to be deleted?",
+                validate=NumberValidator,
+            ).ask()
+        )
+        conv = ResourceKeys(str(self.config.conversions))
+        if conv.delete(resource, cv_id):
+            questionary.print(f"Deleted CV ID: {cv_id}", style=Styles.SUCCESS)
+        else:
+            questionary.print(f"Failed to delete CV ID: {cv_id}", style=Styles.WARNING)
 
     @staticmethod
     def _what_task():
@@ -130,8 +145,10 @@ class Runner:
                         importer_obj.run()
             case TaskType.Update_Resource.value:
                 self._update_resource_key()
+            case TaskType.Delete_Resource.value:
+                self._delete_resource_key()
             case TaskType.Marvel_Releases.value:
-                marvel = MarvelNewReleases(self.config)
-                marvel.run()
+                with MarvelNewReleases(self.config) as marvel_obj:
+                    marvel_obj.run()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

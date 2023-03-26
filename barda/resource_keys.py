@@ -74,3 +74,15 @@ class ResourceKeys:
             (metron, resource, cv),
         )
         self.con.commit()
+
+    def delete(self, resource: int, cv: int) -> bool:
+        """
+        Delete a Comic Vine Resource key.
+
+        Args:
+            resource (int): The Resource enum value.
+            cv (int): The Comic Vine ID.
+        """
+        self.cur.execute("DELETE FROM conversions WHERE resource = ? and cv = ?", (resource, cv))
+        self.con.commit()
+        return self.get(resource, cv) is None

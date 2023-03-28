@@ -77,11 +77,13 @@ class Ignore_Characters(Enum):
     George_H_W_Bush = 9957
     George_W_Bush = 4660
     H_P_Lovecraft = 10641
+    Jack_Kirby = 11432
     John_Ostrander = 96034
     Krishna = 44322
     L_Ron_Hubbard = 96035
     Lash_LaRue = 75444
     Lyndon_Johnson = 38601
+    Merlyn = 14820
     Nelson_Mandela = 19799
     P_W_Botha = 173183
     Santa_Claus = 22143

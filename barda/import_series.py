@@ -79,6 +79,7 @@ class Ignore_Characters(Enum):
     H_P_Lovecraft = 10641
     Jack_Kirby = 11432
     John_Ostrander = 96034
+    Jordan_White = 170634
     Krishna = 44322
     L_Ron_Hubbard = 96035
     Lash_LaRue = 75444

@@ -166,6 +166,9 @@ class ImportSeries:
         receive = requests.get(url)
         cv = Path(url)
         LOGGER.debug(f"Comic Vine image: {cv.name}")
+        if not cv.suffix:
+            LOGGER.debug(f"{cv.name} is missing an extension. Let's not add it to Metron.")
+            return ""
         if cv.name in ["6373148-blank.png", "img_broken.png"]:
             return ""
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"

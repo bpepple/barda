@@ -86,13 +86,16 @@ class Ignore_Characters(Enum):
     Lyndon_Johnson = 38601
     Merlyn = 14820
     Nelson_Mandela = 19799
+    Oberon_Fairies = 21032
     P_W_Botha = 173183
+    Puck_Shakespeare = 9769
     Santa_Claus = 22143
     Sonia_Haft_Greene = 142844
     Stan_Lee = 3115
     Titania = 21031
     Tom_DeFalco = 11901
     War = 13083
+    William_Shakespeare = 39377
 
 
 @unique

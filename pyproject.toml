@@ -48,7 +48,7 @@ multi_line_output = 3
 line_length = 100
 default_section = "THIRDPARTY"
 known_first_party = []
-known_third_party = ["PIL", "bs4", "dateutil", "esak", "mokkari", "mysql", "prompt_toolkit", "pytest", "questionary", "ratelimit", "requests", "simyan", "titlecase", "urllib3", "xdg"]
+known_third_party = ["PIL", "bs4", "comicgeeks", "dateutil", "esak", "mokkari", "mysql", "prompt_toolkit", "pytest", "questionary", "ratelimit", "requests", "simyan", "titlecase", "urllib3", "xdg"]
 
 [tool.coverage.run]
 source = ["barda"]

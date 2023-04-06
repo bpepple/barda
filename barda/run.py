@@ -3,6 +3,7 @@ from enum import Enum, auto, unique
 import questionary
 
 from barda.import_series import ImportSeries
+from barda.locg import LeagueOfComicGeeks
 from barda.marvel import MarvelNewReleases
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
@@ -13,6 +14,7 @@ from barda.validators import NumberValidator
 @unique
 class TaskType(Enum):
     Import_Series = auto()
+    Import_LOCG = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
     Marvel_Releases = auto()
@@ -150,5 +152,8 @@ class Runner:
             case TaskType.Marvel_Releases.value:
                 with MarvelNewReleases(self.config) as marvel_obj:
                     marvel_obj.run()
+            case TaskType.Import_LOCG.value:
+                with LeagueOfComicGeeks(self.config) as locg:
+                    locg.run()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

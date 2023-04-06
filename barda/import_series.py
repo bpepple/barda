@@ -66,17 +66,24 @@ class Ignore_Characters(Enum):
     Arjuna = 26052
     Barack_Obama = 56661
     Bill_Clinton = 11570
+    Black_Knight = 92951  # Scooby Doo
+    Captain_Cutler = 92946  # Scooby Doo
+    Charlie_Funland_Robot = 92958
     Conquest = 27703
     Death = 9632
     Del_Close = 96033
+    Doctor_Jekyll = 22215
     Donald_Trump = 17028
     Famine = 22657
     Frank_Belknap_Long = 142839
+    Frankensteins_Monster = 38840
     Franklin_D_Roosevelt = 31595
     Genghis_Khan = 37303
     George_H_W_Bush = 9957
     George_W_Bush = 4660
+    Ghost_Clown = 92950
     H_P_Lovecraft = 10641
+    Headless_Horseman = 53680
     Jack_Kirby = 11432
     John_Ostrander = 96034
     Jordan_White = 170634
@@ -90,17 +97,24 @@ class Ignore_Characters(Enum):
     P_W_Botha = 173183
     Puck_Shakespeare = 9769
     Santa_Claus = 22143
+    Snow_Ghost = 92954  # Scooby Doo
     Sonia_Haft_Greene = 142844
+    Spooky_Space_Kook = 92947
     Stan_Lee = 3115
     Titania = 21031
+    The_Werewolf = 92953  # Scooby Doo
     Tom_DeFalco = 11901
     War = 13083
+    Wax_Phantom = 92957
     William_Shakespeare = 39377
+    Witch_Doctor = 92959  # Scooby Doo
+    Wolf_Man = 40493
 
 
 @unique
 class Ignore_Creators(Enum):
     Typeset = 67476
+    Robert_Simpson = 69288  # Lucasfilm editor
 
 
 @unique

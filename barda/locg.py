@@ -110,9 +110,10 @@ class LeagueOfComicGeeks:
         characters_lst = []
         for c in characters:
             metron_id = self._search_for_character(c.name)
-            if metron_id is None:
+            if metron_id is None or metron_id == "":
                 continue
-            characters_lst.append(metron_id)
+            else:
+                characters_lst.append(metron_id)
         return characters_lst
 
     #############

@@ -121,11 +121,15 @@ class Ignore_Teams(Enum):
     Communists = 56975
     Dinosaurs = 56551
     Father_and_Daughter = 57450
+    Gravediggers = 59742
     Justice_Forever = 57862
+    Mummies = 58219
     Special_Air_Service = 57233
     United_States_Air_Force = 44417
     United_States_Navy = 44418
     United_States_Special_Forces = 55045
+    Werecats = 61574
+    Zombies = 44930
 
 
 @unique

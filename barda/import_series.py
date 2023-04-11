@@ -3,17 +3,11 @@ import logging
 import uuid
 from enum import Enum, auto, unique
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, List
 
 import questionary
 import requests
-from mokkari import api as m_api
 from mokkari.issue import RoleList
-from mokkari.publisher import PublishersList
-from mokkari.series import SeriesTypeList
-from mokkari.session import Session
-from mokkari.sqlite_cache import SqliteCache as sql_cache
 from mokkari.team import TeamsList
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
@@ -22,16 +16,16 @@ from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
 from simyan.sqlite_cache import SQLiteCache
 from titlecase import titlecase
 
+from barda.base_importer import BaseImporter
 from barda.exceptions import ApiError
 from barda.gcd.db import DB
 from barda.gcd.gcd_issue import GCD_Issue, Rating
 from barda.image import CVImage
-from barda.post_data import PostData
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import cleanup_html
-from barda.validators import NumberValidator, YearValidator
+from barda.validators import NumberValidator
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
@@ -132,43 +126,13 @@ class Ignore_Teams(Enum):
     Zombies = 44930
 
 
-@unique
-class Metron_Genres(Enum):
-    Adult = 1
-    Crime = 13
-    Espionage = 2
-    Fantasy = 3
-    Historical = 4
-    Horror = 5
-    Humor = 6
-    Manga = 7
-    Parody = 14
-    Romance = 8
-    Science_Fiction = 9
-    Sport = 15
-    Super_Hero = 10
-    War = 11
-    Western = 12
-
-
-class ImportSeries:
+class ImportSeries(BaseImporter):
     def __init__(self, config: BardaSettings) -> None:
-        self.config = config
+        super(ImportSeries, self).__init__(config)
         cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
-        metron_cache = sql_cache(str(config.metron_cache), 1) if config.metron_cache else None
-
         self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
-        self.metron: Session = m_api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
-        self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ResourceKeys(str(config.conversions))
-        self.image_dir = TemporaryDirectory()
         self.add_characters = False
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.image_dir.cleanup()
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -231,17 +195,6 @@ class ImportSeries:
         LOGGER.debug(f"title: {result}")
         LOGGER.debug("Exiting fix_title_data()...")
         return result
-
-    @staticmethod
-    def _create_choices(item) -> List[questionary.Choice] | None:
-        if not item:
-            return None
-        choices: List[questionary.Choice] = []
-        for i in item:
-            choice = questionary.Choice(title=i.name, value=i.id)
-            choices.append(choice)
-        choices.append(questionary.Choice(title="None", value=""))
-        return choices
 
     def _confirm_resource_choice(
         self, resource: Resources, cv_entry: GenericEntry, choices: List[questionary.Choice]
@@ -817,41 +770,6 @@ class ImportSeries:
             character_lst.append(metron_id)
         return character_lst
 
-    ###############
-    # Series Type #
-    ###############
-    def _choose_series_type(self) -> int:  # sourcery skip: class-extract-method
-        st_lst: SeriesTypeList = self.metron.series_type_list()
-        choices = []
-        for s in st_lst:
-            choice = questionary.Choice(title=s.name, value=s.id)
-            choices.append(choice)
-        return int(questionary.select("What type of series is this?", choices=choices).ask())
-
-    #########
-    # Genre #
-    #########
-    def _choose_genre(self) -> int:
-        choices = []
-        for i in Metron_Genres:
-            choice = questionary.Choice(title=i.name, value=i.value)
-            choices.append(choice)
-        return int(questionary.select("What genre should this series be?", choices=choices).ask())
-
-    #############
-    # Publisher #
-    #############
-    def _choose_publisher(self) -> int:
-        pub_lst: PublishersList = self.metron.publishers_list()
-        choices = []
-        for p in pub_lst:
-            choice = questionary.Choice(title=p.name, value=p.id)
-            choices.append(choice)
-        # TODO: Provide option to add a Publisher
-        return int(
-            questionary.select("Which publisher is this series from?", choices=choices).ask()
-        )
-
     ##########
     # Series #
     ##########
@@ -887,53 +805,6 @@ class ImportSeries:
         choices = self._create_series_choices(results)
 
         return questionary.select("Which series to import", choices=choices).ask()
-
-    @staticmethod
-    def _determine_series_year_began(start_year: int | None) -> int:
-        if start_year is not None:
-            return (
-                start_year
-                if questionary.confirm(
-                    f"Is '{start_year}' the correct year that this series began?"
-                ).ask()
-                else int(
-                    questionary.text(
-                        "What begin year should be used for this series?",
-                        validate=YearValidator,
-                    ).ask()
-                )
-            )
-        else:
-            return int(
-                questionary.text(
-                    "No begin year found. What begin year should be used for this series?",
-                    validate=YearValidator,
-                ).ask()
-            )
-
-    @staticmethod
-    def _determine_series_year_end(series_type_id: int) -> int | None:
-        return (
-            int(questionary.text("What year did this series end in?", validate=YearValidator).ask())
-            if series_type_id in {11, 2}
-            else None
-        )
-
-    @staticmethod
-    def _determine_series_name(series_name: str) -> str:
-        return (
-            series_name
-            if questionary.confirm(f"Is '{series_name}' the correct name?").ask()
-            else questionary.text("What should the series name be?").ask()
-        )
-
-    @staticmethod
-    def _determine_series_sort_name(series_name: str) -> str:
-        return (
-            series_name
-            if questionary.confirm(f"Should '{series_name}' also be the Sort Name?").ask()
-            else questionary.text("What should the sort name be?").ask()
-        )
 
     def _ask_for_series_info(self, cv_series: VolumeEntry) -> dict[str, Any]:
         display_name = f"{cv_series.name} ({cv_series.start_year})"

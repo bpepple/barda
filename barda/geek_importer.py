@@ -19,9 +19,9 @@ from barda.styles import Styles
 from barda.validators import NumberValidator
 
 
-class LeagueOfComicGeeks(BaseImporter):
+class GeeksImporter(BaseImporter):
     def __init__(self, config: BardaSettings) -> None:
-        super(LeagueOfComicGeeks, self).__init__(config)
+        super(GeeksImporter, self).__init__(config)
         self.locg: Comic_Geeks | None = None
 
     def _get_cover(self, url: str) -> str:

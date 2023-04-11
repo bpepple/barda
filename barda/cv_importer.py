@@ -126,9 +126,9 @@ class Ignore_Teams(Enum):
     Zombies = 44930
 
 
-class ImportSeries(BaseImporter):
+class ComicVineImporter(BaseImporter):
     def __init__(self, config: BardaSettings) -> None:
-        super(ImportSeries, self).__init__(config)
+        super(ComicVineImporter, self).__init__(config)
         cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
         self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
         self.conversions = ResourceKeys(str(config.conversions))

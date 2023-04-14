@@ -153,7 +153,7 @@ class ComicVineImporter(BaseImporter):
         if not cv.suffix:
             LOGGER.debug(f"{cv.name} is missing an extension. Let's not add it to Metron.")
             return ""
-        if cv.name in ["6373148-blank.png", "img_broken.png"]:
+        if cv.name in {"6373148-blank.png", "img_broken.png"}:
             return ""
         new_fn = f"{uuid.uuid4().hex}{cv.suffix}"
         img_file = Path(self.image_dir.name) / new_fn

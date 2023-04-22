@@ -8,6 +8,7 @@ from typing import Any, List
 import questionary
 import requests
 from mokkari.issue import RoleList
+from mokkari.series import SeriesList
 from mokkari.team import TeamsList
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue, VolumeEntry
@@ -243,17 +244,26 @@ class ComicVineImporter(BaseImporter):
             )
         return metron_id
 
+    def _select_metron_series(self, series_lst: SeriesList, series: VolumeEntry):
+        choices: List[questionary.Choice] = []
+        for i in series_lst:
+            choice = questionary.Choice(title=i.display_name, value=i.id)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return questionary.select(
+            f"What series on Metron should be used for '{series.name} ({series.start_year})'?",
+            choices=choices,
+        ).ask()
+
     def _check_metron_for_series(self, series: VolumeEntry) -> str | None:
         if series_lst := self.metron.series_list({"name": series.name}):
-            choices: List[questionary.Choice] = []
-            for i in series_lst:
-                choice = questionary.Choice(title=i.display_name, value=i.id)
-                choices.append(choice)
-            choices.append(questionary.Choice(title="None", value=""))
-            return questionary.select(
-                f"What series on Metron should be used for '{series.name} ({series.start_year})'?",
-                choices=choices,
-            ).ask()
+            return self._select_metron_series(series_lst, series)
+
+        series_query = questionary.text(
+            "Nothing found on Metron. What other name should we use?"
+        ).ask()
+        if series_lst := self.metron.series_list({"name": series_query}):
+            return self._select_metron_series(series_lst, series)
         else:
             return None
 

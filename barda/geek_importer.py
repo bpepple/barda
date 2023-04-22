@@ -9,6 +9,7 @@ import questionary
 import requests
 from comicgeeks import Comic_Geeks
 from comicgeeks.Comic_Geeks import Character, Issue
+from mokkari.series import SeriesList
 
 from barda.base_importer import BaseImporter
 from barda.exceptions import ApiError
@@ -125,19 +126,31 @@ class GeeksImporter(BaseImporter):
 
         return None if new_series is None else new_series["id"]
 
+    def _select_metron_series(self, series_lst: SeriesList, series):
+        choices: List[questionary.Choice] = []
+        for i in series_lst:
+            choice = questionary.Choice(title=i.display_name, value=i.id)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return questionary.select(
+            f"What series on Metron should be used for '{series}'?",
+            choices=choices,
+        ).ask()
+
     def _check_metron_for_series(self, series: str) -> str | None:
         if series_lst := self.metron.series_list({"name": series}):
-            choices: List[questionary.Choice] = []
-            for i in series_lst:
-                choice = questionary.Choice(title=i.display_name, value=i.id)
-                choices.append(choice)
-            choices.append(questionary.Choice(title="None", value=""))
-            return questionary.select(
-                f"What series on Metron should be used for '{series}'?",
-                choices=choices,
-            ).ask()
-        else:
+            return self._select_metron_series(series_lst, series)
+
+        if not questionary.confirm(
+            "Nothin found for {series} on Metron. Do you want to do another search?"
+        ).ask():
             return None
+        series_query = questionary.text("What series name should we use?").ask()
+        return (
+            self._select_metron_series(series_lst, series)
+            if (series_lst := self.metron.series_list({"name": series_query}))
+            else None
+        )
 
     def _get_series_id(self, series: str) -> int | None:
         mseries_id = self._check_metron_for_series(series)

@@ -142,7 +142,7 @@ class GeeksImporter(BaseImporter):
             return self._select_metron_series(series_lst, series)
 
         if not questionary.confirm(
-            "Nothin found for {series} on Metron. Do you want to do another search?"
+            f"Nothin found for {series} on Metron. Do you want to do another search?"
         ).ask():
             return None
         series_query = questionary.text("What series name should we use?").ask()

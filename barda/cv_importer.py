@@ -258,13 +258,17 @@ class ComicVineImporter(BaseImporter):
         if series_lst := self.metron.series_list({"name": series.name}):
             return self._select_metron_series(series_lst, series)
 
-        series_query = questionary.text(
-            "Nothing found on Metron. What other name should we use?"
-        ).ask()
-        if series_lst := self.metron.series_list({"name": series_query}):
-            return self._select_metron_series(series_lst, series)
-        else:
+        if not questionary.confirm(
+            f"No series for '{series.name} ({series.start_year})' on Metron. Do you want to do another search?"
+        ).ask():
             return None
+
+        series_query = questionary.text("What name should we use to search for the series?").ask()
+        return (
+            self._select_metron_series(series_lst, series)
+            if (series_lst := self.metron.series_list({"name": series_query}))
+            else None
+        )
 
     # GCD methods
     @staticmethod

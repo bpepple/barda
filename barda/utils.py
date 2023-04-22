@@ -9,6 +9,9 @@ def fix_story_chapters(story: str) -> str:
     lower_story_str = story.lower()
     for t in story_types:
         idx = lower_story_str.find(t)
+        # Nothing found. Let's check the next type
+        if idx == -1:
+            continue
         fist_char_before = idx - 1
         second_char_before = idx - 2
         if lower_story_str[fist_char_before] == " ":

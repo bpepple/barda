@@ -15,7 +15,6 @@ from simyan.comicvine import Issue, VolumeEntry
 from simyan.exceptions import ServiceError
 from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
 from simyan.sqlite_cache import SQLiteCache
-from titlecase import titlecase
 
 from barda.base_importer import BaseImporter
 from barda.exceptions import ApiError
@@ -25,7 +24,7 @@ from barda.image import CVImage
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
-from barda.utils import cleanup_html
+from barda.utils import cleanup_html, fix_story_chapters
 from barda.validators import NumberValidator
 
 LOGGER = logging.getLogger(__name__)
@@ -225,7 +224,7 @@ class ComicVineImporter(BaseImporter):
             # Remove quotation marks from title
             result[index] = txt.strip('"')
             # Capitalize title correctly
-            result[index] = titlecase(result[index])
+            result[index] = fix_story_chapters(result[index])
 
         LOGGER.debug(f"title: {result}")
         LOGGER.debug("Exiting fix_title_data()...")
@@ -325,7 +324,7 @@ class ComicVineImporter(BaseImporter):
             stories = []
             for i in stories_list:
                 story = str(i[0]) if i[0] else "[Untitled]"
-                stories.append(titlecase(story))
+                stories.append(fix_story_chapters(story))
 
             LOGGER.debug(f"Stories: {stories}")
             LOGGER.debug("Exiting get_gcd_stories()...")

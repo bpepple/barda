@@ -7,6 +7,7 @@ test_stories = [
     pytest.param("Devil in the Sand,Part One", "Missing space", "Devil in the Sand, Part One"),
     pytest.param("Devil in the Sand, Part One", "Correct entry", "Devil in the Sand, Part One"),
     pytest.param("Devil in the Sand", "Nothing to fix", "Devil in the Sand"),
+    pytest.param("On the Ground - Part 1", "Hyphen instead of comma", "On the Ground, Part 1"),
 ]
 
 

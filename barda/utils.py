@@ -12,6 +12,11 @@ def fix_story_chapters(story: str) -> str:
         # Nothing found. Let's check the next type
         if idx == -1:
             continue
+        # Check for hyphen
+        hyphen_idx = lower_story_str.find(f"- {t}")
+        if hyphen_idx != -1:
+            story = f"{lower_story_str[:hyphen_idx].strip()},{lower_story_str[hyphen_idx + 1:]}"
+            return titlecase(story)
         fist_char_before = idx - 1
         second_char_before = idx - 2
         if lower_story_str[fist_char_before] == " ":
@@ -24,7 +29,7 @@ def fix_story_chapters(story: str) -> str:
             # This will add a space after each comma, which should be alright.
             lower_story_str = lower_story_str.replace(",", ", ")
             return titlecase(lower_story_str)
-        # TODO: Handle cases where the story type if enclosed in parenthesis.
+            # TODO: Handle cases where the story type if enclosed in parenthesis.
     return titlecase(story)
 
 

@@ -25,6 +25,7 @@ class Ignore_Characters(Enum):
     Del_Close = 96033
     Doctor_Jekyll = 22215
     Donald_Trump = 17028
+    Dwight_D_Eisenhower = 68094
     Famine = 22657
     Frank_Belknap_Long = 142839
     Frankensteins_Monster = 38840
@@ -44,6 +45,7 @@ class Ignore_Characters(Enum):
     Jack_Kirby = 11432
     Jasper = 22491
     Jerry_Jitterbug = 47403
+    Joe_DiMaggio = 6005
     John_Ostrander = 96034
     John_Wayne = 20169
     Jordan_White = 170634
@@ -56,8 +58,10 @@ class Ignore_Characters(Enum):
     Merlyn = 14820
     Nelson_Mandela = 19799
     Olga = 32176
+    Orion_Myth = 36265
     P_W_Botha = 173183
     Peg_DC = 18142
+    Phineas_T_Barnum = 67904
     Private_Pete = 38858
     Professor_Doolittle = 63117
     Rudolf_Hess = 35217

@@ -49,6 +49,6 @@ class DB:
         return self.cursor.fetchall()
 
     def get_stories(self, issue_id: int):
-        q = "SELECT title from gcd_story WHERE type_id=19 AND issue_id=%s;"
+        q = "SELECT title from gcd_story WHERE type_id=19 AND issue_id=%s ORDER BY sequence_number;"
         self.cursor.execute(q, [issue_id])
         return self.cursor.fetchall()

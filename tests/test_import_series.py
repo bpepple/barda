@@ -1,6 +1,6 @@
 import pytest
 
-from barda.import_series import ImportSeries
+from barda.cv_importer import ComicVineImporter
 from barda.settings import BardaSettings
 
 test_data = [
@@ -13,7 +13,7 @@ test_data = [
 @pytest.mark.parametrize("comic,reason,expected", test_data)
 def test_gcd_stories(comic: int, reason: str, expected: int, tmpdir):
     test_settings = BardaSettings(config_dir=tmpdir)
-    IS = ImportSeries(test_settings)
+    IS = ComicVineImporter(test_settings)
     stories = IS._get_gcd_stories(comic)
     assert isinstance(stories, list)
     assert len(stories) == expected

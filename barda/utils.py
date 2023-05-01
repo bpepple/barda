@@ -1,6 +1,36 @@
 import re
 
 from bs4 import BeautifulSoup
+from titlecase import titlecase
+
+
+def fix_story_chapters(story: str) -> str:
+    story_types = ["chapter", "part", "conclusion"]
+    lower_story_str = story.lower()
+    for t in story_types:
+        idx = lower_story_str.find(t)
+        # Nothing found. Let's check the next type
+        if idx == -1:
+            continue
+        # Check for hyphen
+        hyphen_idx = lower_story_str.find(f"- {t}")
+        if hyphen_idx != -1:
+            story = f"{lower_story_str[:hyphen_idx].strip()},{lower_story_str[hyphen_idx + 1:]}"
+            return titlecase(story)
+        fist_char_before = idx - 1
+        second_char_before = idx - 2
+        if lower_story_str[fist_char_before] == " ":
+            if lower_story_str[second_char_before] == ",":
+                # Nothing to fix.
+                return titlecase(story)
+            lower_story_str = lower_story_str.replace(f" {t}", f", {t}")
+            return titlecase(lower_story_str)
+        if lower_story_str[fist_char_before] == "," and lower_story_str[second_char_before] != " ":
+            # This will add a space after each comma, which should be alright.
+            lower_story_str = lower_story_str.replace(",", ", ")
+            return titlecase(lower_story_str)
+            # TODO: Handle cases where the story type if enclosed in parenthesis.
+    return titlecase(story)
 
 
 def cleanup_html(string, remove_html_tables):  # sourcery skip: low-code-quality

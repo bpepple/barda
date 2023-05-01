@@ -2,8 +2,8 @@ from enum import Enum, auto, unique
 
 import questionary
 
-from barda.import_series import ImportSeries
-from barda.locg import LeagueOfComicGeeks
+from barda.cv_importer import ComicVineImporter
+from barda.geek_importer import GeeksImporter
 from barda.marvel import MarvelNewReleases
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
@@ -143,7 +143,7 @@ class Runner:
         match task:
             case TaskType.Import_Series.value:
                 if self.config.cv_api_key:
-                    with ImportSeries(self.config) as importer_obj:
+                    with ComicVineImporter(self.config) as importer_obj:
                         importer_obj.run()
             case TaskType.Update_Resource.value:
                 self._update_resource_key()
@@ -153,7 +153,7 @@ class Runner:
                 with MarvelNewReleases(self.config) as marvel_obj:
                     marvel_obj.run()
             case TaskType.Import_LOCG.value:
-                with LeagueOfComicGeeks(self.config) as locg:
+                with GeeksImporter(self.config) as locg:
                     locg.run()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

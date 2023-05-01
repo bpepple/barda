@@ -42,12 +42,12 @@ class CVImage:
 
     def _convert_to_rgb(self) -> None:
         LOGGER.debug("Entering covert_to_rgb()...")
-        i = Image.open(self.image)
-        mode = i.mode
-        LOGGER.debug(f"Image '{self.image.name}' mode is '{mode}'.")
-        if mode in ("RGBA", "P"):
-            i = i.convert("RGB")
-            i.save(self.image)
+        with Image.open(self.image) as img:
+            mode = img.mode
+            LOGGER.debug(f"Image '{self.image.name}' mode is '{mode}'.")
+            if mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+                img.save(self.image)
         LOGGER.debug("Exiting convert_to_rbg()...")
 
     def resize_cover(self) -> None:  # sourcery skip: class-extract-method
@@ -55,71 +55,66 @@ class CVImage:
             # Cover needs to be cropped
             return
         self._convert_to_rgb()
-        i = Image.open(self.image)
-        w, h = i.size
-        if w == COVER_WIDTH:
-            # No need to resize
-            return
-        wpercent = COVER_WIDTH / float(w)
-        hsize = int(float(h) * float(wpercent))
-        i = i.resize((COVER_WIDTH, hsize), Image.Resampling.LANCZOS)
-        i.save(self.image)
+        with Image.open(self.image) as i:
+            w, h = i.size
+            if w == COVER_WIDTH:
+                # No need to resize
+                return
+            wpercent = COVER_WIDTH / float(w)
+            hsize = int(float(h) * float(wpercent))
+            i = i.resize((COVER_WIDTH, hsize), Image.Resampling.LANCZOS)
+            i.save(self.image)
 
     def resize_creator(self) -> None:  # sourcery skip: extract-duplicate-method
         LOGGER.debug("Entering resize_creator()...")
         left = top = 0
         self._convert_to_rgb()
         shape = self._determine_shape()
-        i = Image.open(self.image)
-        w, h = i.size
-        LOGGER.debug(f"'{self.image.name}' - shape: {shape}, width: {w}, height: {h}.")
-        match shape:
-            case ImageShape.Square:
-                if w != CREATOR_WIDTH:
+
+        with Image.open(self.image) as i:
+            w, h = i.size
+            LOGGER.debug(f"'{self.image.name}' - shape: {shape}, width: {w}, height: {h}.")
+            match shape:
+                case ImageShape.Square:
+                    if w != CREATOR_WIDTH:
+                        i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
+                        i.save(self.image)
+                case ImageShape.Tall:
+                    i = i.crop((left, top, w, w))
                     i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
                     i.save(self.image)
-
-            case ImageShape.Tall:
-                i = i.crop((left, top, w, w))
-                i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
-                i.save(self.image)
-
-            case ImageShape.Wide:
-                # TODO: Need to center crop this
-                i = i.crop((top, left, h, h))
-                i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
-                i.save(self.image)
-
-            case _:
-                return
+                case ImageShape.Wide:
+                    # TODO: Need to center crop this
+                    i = i.crop((top, left, h, h))
+                    i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
+                    i.save(self.image)
+                case _:
+                    return
 
         LOGGER.debug("Exiting resize_creator()...")
 
     def resize_resource(self) -> None:  # sourcery skip: extract-duplicate-method, extract-method
         shape = self._determine_shape()
         self._convert_to_rgb()
-        i = Image.open(self.image)
-        w, h = i.size
-        top = 0
-        match shape:
-            case ImageShape.Tall:
-                wpercent = RESOURCE_WIDTH / float(w)
-                hsize = int(float(h) * float(wpercent))
-                i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
-                i.save(self.image)
-
-            case ImageShape.Wide | ImageShape.Square:
-                crop_width = int(float(h) / float(3) * float(2))
-                diff = w - crop_width
-                left = int(diff / 2)
-                right = left + crop_width
-                i = i.crop((left, top, right, h))
-                new_w, _ = i.size
-                wpercent = RESOURCE_WIDTH / float(new_w)
-                hsize = int(float(h) * float(wpercent))
-                i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
-                i.save(self.image)
-
-            case _:
-
-                return
+        with Image.open(self.image) as i:
+            w, h = i.size
+            top = 0
+            match shape:
+                case ImageShape.Tall:
+                    wpercent = RESOURCE_WIDTH / float(w)
+                    hsize = int(float(h) * float(wpercent))
+                    i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
+                    i.save(self.image)
+                case ImageShape.Wide | ImageShape.Square:
+                    crop_width = int(float(h) / float(3) * float(2))
+                    diff = w - crop_width
+                    left = int(diff / 2)
+                    right = left + crop_width
+                    i = i.crop((left, top, right, h))
+                    new_w, _ = i.size
+                    wpercent = RESOURCE_WIDTH / float(new_w)
+                    hsize = int(float(h) * float(wpercent))
+                    i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
+                    i.save(self.image)
+                case _:
+                    return

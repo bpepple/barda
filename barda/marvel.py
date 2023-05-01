@@ -12,10 +12,10 @@ from esak import api, sqlite_cache
 from mokkari import api as metron
 from mokkari.series import SeriesTypeList
 
+from barda.cv_importer import ImageType
 from barda.exceptions import ApiError
 from barda.gcd.gcd_issue import Rating
 from barda.image import CVImage
-from barda.import_series import ImageType
 from barda.post_data import PostData
 from barda.settings import BardaSettings
 from barda.styles import Styles

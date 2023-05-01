@@ -61,6 +61,7 @@ class ComicVineImporter(BaseImporter):
         self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
         self.conversions = ResourceKeys(str(config.conversions))
         self.add_characters = False
+        self.role_list: RoleList | None = None
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -309,15 +310,14 @@ class ComicVineImporter(BaseImporter):
             role_lst = creator.roles.split(", ")
             role_lst = self._fix_role_list(role_lst)
 
-        metron_role_lst = self.metron.role_list()
+        if self.role_list is None:
+            self.role_list = self.metron.role_list()
         roles = []
         for i in role_lst:
-            roles.extend(
-                m_role.id for m_role in metron_role_lst if i.lower() == m_role.name.lower()
-            )
+            roles.extend(m_role.id for m_role in self.role_list if i.lower() == m_role.name.lower())
 
         if not roles:
-            roles.append(self._ask_for_role(creator, metron_role_lst))
+            roles.append(self._ask_for_role(creator, self.role_list))
 
         return roles
 

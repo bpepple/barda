@@ -7,7 +7,6 @@ from mokkari import api
 from mokkari.publisher import PublishersList
 from mokkari.series import SeriesTypeList
 from mokkari.session import Session
-from mokkari.sqlite_cache import SqliteCache
 
 from barda.post_data import PostData
 from barda.settings import BardaSettings
@@ -37,8 +36,8 @@ class BaseImporter:
     def __init__(self, config: BardaSettings) -> None:
         self.image_dir = TemporaryDirectory()
         self.barda = PostData(config.metron_user, config.metron_password)
-        metron_cache = SqliteCache(str(config.metron_cache), 1) if config.metron_cache else None
-        self.metron: Session = api(config.metron_user, config.metron_password, metron_cache)  # type: ignore
+        self.metron: Session = api(config.metron_user, config.metron_password, None)  # type: ignore
+        self.series_type: SeriesTypeList | None = None
 
     def __enter__(self):
         return self
@@ -64,9 +63,10 @@ class BaseImporter:
     # Series Type #
     ###############
     def _choose_series_type(self) -> int:
-        st_lst: SeriesTypeList = self.metron.series_type_list()
+        if self.series_type is None:
+            self.series_type = self.metron.series_type_list()
         choices = []
-        for s in st_lst:
+        for s in self.series_type:
             choice = questionary.Choice(title=s.name, value=s.id)
             choices.append(choice)
         return int(questionary.select("What type of series is this?", choices=choices).ask())

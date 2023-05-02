@@ -8,6 +8,7 @@ from barda.marvel import MarvelNewReleases
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
+from barda.update_gcd import GcdUpdate
 from barda.validators import NumberValidator
 
 
@@ -15,6 +16,7 @@ from barda.validators import NumberValidator
 class TaskType(Enum):
     Import_Series = auto()
     Import_LOCG = auto()
+    Update_Issue = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
     Marvel_Releases = auto()
@@ -155,5 +157,8 @@ class Runner:
             case TaskType.Import_LOCG.value:
                 with GeeksImporter(self.config) as locg:
                     locg.run()
+            case TaskType.Update_Issue.value:
+                gcd = GcdUpdate(self.config)
+                gcd.run()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

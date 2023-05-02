@@ -112,7 +112,7 @@ class PostData:
         return resp
 
     @sleep_and_retry
-    @limits(calls=30, period=ONE_MINUTE)
+    @limits(calls=20, period=ONE_MINUTE)
     def _patch(self, endpoint: List[Union[str, int]], data):
         url = self.api_url.format("/".join(str(e) for e in endpoint))
 

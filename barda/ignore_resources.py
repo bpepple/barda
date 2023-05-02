@@ -14,6 +14,7 @@ class Ignore_Characters(Enum):
     Bill_Clinton = 11570
     Bill_Hicks = 41377
     Black_Knight = 92951  # Scooby Doo
+    Burp_the_Twerp = 63892
     Captain_Cutler = 92946  # Scooby Doo
     Casey_the_Cop = 51046
     Charlie_Funland_Robot = 92958
@@ -27,6 +28,9 @@ class Ignore_Characters(Enum):
     Donald_Trump = 17028
     Dwight_D_Eisenhower = 68094
     Famine = 22657
+    Father_Time = 26147
+    Finnegan = 26689
+    Flatfoot_Burns = 168126
     Frank_Belknap_Long = 142839
     Frankensteins_Monster = 38840
     Franklin_D_Roosevelt = 31595
@@ -42,6 +46,7 @@ class Ignore_Characters(Enum):
     Headless_Horseman = 53680
     Homer_DC = 20548
     Honey_in_Hollywood = 48091
+    Honeybun = 120056
     Jack_Kirby = 11432
     Jasper = 22491
     Jerry_Jitterbug = 47403
@@ -73,9 +78,11 @@ class Ignore_Characters(Enum):
     Smokey_the_Bear = 8485
     Snow_Ghost = 92954  # Scooby Doo
     Sonia_Haft_Greene = 142844
+    Specks = 173571
     Spooky_Space_Kook = 92947
     Stan_Lee = 3115
     Sunshine_Nelly = 174071
+    Super_Snooper = 82634
     Titania = 21031
     The_Werewolf = 92953  # Scooby Doo
     Tom_DeFalco = 11901

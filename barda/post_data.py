@@ -1,6 +1,6 @@
 import json
-import logging
 import platform
+from logging import getLogger
 from pathlib import Path
 from typing import List, Union
 
@@ -11,12 +11,7 @@ from urllib3 import Retry
 
 from barda import __version__, exceptions
 
-LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
-handler = logging.FileHandler("barda.log")
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-handler.setFormatter(formatter)
-LOGGER.addHandler(handler)
+LOGGER = getLogger(__name__)
 
 ONE_MINUTE = 60
 
@@ -25,7 +20,6 @@ class PostData:
     def __init__(self, user: str, passwd: str) -> None:
         self.user = user
         self.passwd = passwd
-        # self.api_url = "http://127.0.0.1:8000/api/{}/"
         self.api_url = "https://metron.cloud/api/{}/"
         self.header = {
             "User-Agent": f"Barda/{__version__} ({platform.system()}; {platform.release()})"

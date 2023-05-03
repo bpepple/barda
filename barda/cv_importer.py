@@ -1,7 +1,7 @@
 import datetime
-import logging
 import uuid
 from enum import Enum, auto, unique
+from logging import getLogger
 from pathlib import Path
 from typing import Any, List
 
@@ -28,12 +28,7 @@ from barda.styles import Styles
 from barda.utils import cleanup_html, fix_story_chapters
 from barda.validators import NumberValidator
 
-LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
-handler = logging.FileHandler("barda.log")
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-handler.setFormatter(formatter)
-LOGGER.addHandler(handler)
+LOGGER = getLogger(__name__)
 
 
 @unique

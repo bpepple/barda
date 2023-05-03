@@ -4,6 +4,7 @@ import questionary
 
 from barda.cv_importer import ComicVineImporter
 from barda.geek_importer import GeeksImporter
+from barda.logging import init_logging
 from barda.marvel import MarvelNewReleases
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
@@ -140,6 +141,9 @@ class Runner:
         if not self._has_marvel_credentials() and not self._get_marvel_credentials():
             questionary.print("No Marvel credentials provided. Exiting...")
             exit(0)
+
+        # Start logging
+        init_logging()
 
         task = self._what_task()
         match task:

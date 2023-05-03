@@ -1,5 +1,5 @@
-import logging
 from enum import Enum, auto, unique
+from logging import getLogger
 from pathlib import Path
 
 from PIL import Image
@@ -8,12 +8,7 @@ COVER_WIDTH = 600
 RESOURCE_WIDTH = 320
 CREATOR_WIDTH = 256  # Also the height
 
-LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
-handler = logging.FileHandler("barda.log")
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-handler.setFormatter(formatter)
-LOGGER.addHandler(handler)
+LOGGER = getLogger(__name__)
 
 
 @unique

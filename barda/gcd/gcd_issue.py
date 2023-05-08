@@ -50,7 +50,7 @@ class GCD_Issue:
         if not rating:
             return Rating.Unknown.value
 
-        MARVEL = [31, 16, 26, 265, 1217, 401]
+        MARVEL = [31, 16, 26, 78, 265, 1217, 401]
         if self.publisher in MARVEL:
             match rating.strip().casefold():
                 case "rated a":

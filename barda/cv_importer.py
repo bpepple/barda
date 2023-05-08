@@ -908,6 +908,12 @@ class ComicVineImporter(BaseImporter):
             ).ask()
 
             for i in i_list:
+                if i.number is not None and self.metron.issues_list(
+                    params={"series_id": series_id, "number": i.number}
+                ):
+                    questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
+                    continue
+
                 try:
                     cv_issue = self.cv.issue(i.issue_id)
                 except ServiceError:
@@ -918,19 +924,12 @@ class ComicVineImporter(BaseImporter):
                     continue
 
                 if cv_issue and cv_issue.number is not None:
-                    if not self.metron.issues_list(
-                        params={"series_id": series_id, "number": cv_issue.number}
-                    ):
-                        new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)
-                        if new_issue is not None:
-                            questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
-                        else:
-                            questionary.print(
-                                f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
-                            )
+                    new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)
+                    if new_issue is not None:
+                        questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
                     else:
                         questionary.print(
-                            f"{cv_issue.volume.name} #{cv_issue.number} already exists. Skipping..."
+                            f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
                         )
         else:
             print("Nothing found")

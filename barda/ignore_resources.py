@@ -11,6 +11,7 @@ class Ignore_Characters(Enum):
     Bastet = 22575
     Bebe = 48007
     Benjamin_Franklin = 38634
+    Benito_Mussolini = 9672
     Bill_Clinton = 11570
     Bill_Hicks = 41377
     Black_Knight = 92951  # Scooby Doo
@@ -34,6 +35,7 @@ class Ignore_Characters(Enum):
     Frank_Belknap_Long = 142839
     Frankensteins_Monster = 38840
     Franklin_D_Roosevelt = 31595
+    General_Douglas_MacArthur = 3032
     Genesis_Preacher = 10533
     Genghis_Khan = 37303
     George_H_W_Bush = 9957
@@ -44,6 +46,8 @@ class Ignore_Characters(Enum):
     H_P_Lovecraft = 10641
     Handy_Andy = 168137
     Headless_Horseman = 53680
+    Heinrich_Himmler = 8056
+    Hermann_Göring = 31684
     Homer_DC = 20548
     Honey_in_Hollywood = 48091
     Honeybun = 120056
@@ -54,6 +58,7 @@ class Ignore_Characters(Enum):
     John_Ostrander = 96034
     John_Wayne = 20169
     Jordan_White = 170634
+    Joseph_Goebbels = 31685
     Krishna = 44322
     L_Ron_Hubbard = 96035
     Lash_LaRue = 75444
@@ -83,6 +88,7 @@ class Ignore_Characters(Enum):
     Stan_Lee = 3115
     Sunshine_Nelly = 174071
     Super_Snooper = 82634
+    The_Imp = 92247  # 1940s Cap villain
     Titania = 21031
     The_Werewolf = 92953  # Scooby Doo
     Tom_DeFalco = 11901
@@ -91,6 +97,7 @@ class Ignore_Characters(Enum):
     War = 13083
     Wax_Phantom = 92957
     William_Shakespeare = 39377
+    Winston_Churchill = 31245
     Witch_Doctor = 92959  # Scooby Doo
     Willy_DC = 34761
     Wolf_Man = 40493

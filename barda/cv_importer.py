@@ -133,7 +133,8 @@ class ComicVineImporter(BaseImporter):
             )
         return metron_id
 
-    def _select_metron_series(self, series_lst: SeriesList, series: VolumeEntry):
+    @staticmethod
+    def _select_metron_series(series_lst: SeriesList, series: VolumeEntry):
         choices: List[questionary.Choice] = []
         for i in series_lst:
             choice = questionary.Choice(title=i.display_name, value=i.id)
@@ -202,7 +203,8 @@ class ComicVineImporter(BaseImporter):
             else:
                 return None
 
-    def _get_gcd_stories(self, gcd_issue_id):
+    @staticmethod
+    def _get_gcd_stories(gcd_issue_id):
         LOGGER.debug("Entering get_gcd_stories()...")
         with DB() as gcd_obj:
             stories_list = gcd_obj.get_stories(gcd_issue_id)

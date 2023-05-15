@@ -75,14 +75,14 @@ class CVImage:
                         i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
                         i.save(self.image)
                 case ImageShape.Tall:
-                    i = i.crop((left, top, w, w))
-                    i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
-                    i.save(self.image)
+                    img = i.crop((left, top, w, w))
+                    img = img.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
+                    img.save(self.image)
                 case ImageShape.Wide:
                     # TODO: Need to center crop this
-                    i = i.crop((top, left, h, h))
-                    i = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
-                    i.save(self.image)
+                    img = i.crop((top, left, h, h))
+                    img = i.resize((CREATOR_WIDTH, CREATOR_WIDTH), Image.Resampling.LANCZOS)
+                    img.save(self.image)
                 case _:
                     return
 

@@ -146,7 +146,7 @@ class ComicVineImporter(BaseImporter):
         ).ask()
 
     def _check_metron_for_series(self, series: VolumeEntry) -> str | None:
-        if series_lst := self.metron.series_list({"name": series.name}):
+        if series_lst := self.metron.series_list({"name": series.name.lower().lstrip("the ")}):
             return self._select_metron_series(series_lst, series)
 
         if not questionary.confirm(
@@ -879,7 +879,9 @@ class ComicVineImporter(BaseImporter):
             gcd_query = questionary.text("What series name do you want to use to search GCD?").ask()
             if gcd_series_list := db_obj.get_series_list(gcd_query):
                 gcd_idx = self._select_gcd_series(gcd_series_list)
-                gcd_series_id = None if gcd_idx is None else gcd_series_list[gcd_idx][0]
+                gcd_series_id = (
+                    None if gcd_idx is None or gcd_idx == "" else gcd_series_list[gcd_idx][0]
+                )
             else:
                 questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
                 gcd_series_id = None

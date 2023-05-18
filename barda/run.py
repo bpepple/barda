@@ -2,10 +2,10 @@ from enum import Enum, auto, unique
 
 import questionary
 
-from barda.cv_importer import ComicVineImporter
-from barda.geek_importer import GeeksImporter
+from barda.importer_comic_geek import GeeksImporter
+from barda.importer_comic_vine import ComicVineImporter
+from barda.importer_marvel import MarvelNewReleases
 from barda.logging import init_logging
-from barda.marvel import MarvelNewReleases
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles

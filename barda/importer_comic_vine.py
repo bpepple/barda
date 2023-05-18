@@ -16,12 +16,12 @@ from simyan.exceptions import ServiceError
 from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
 from simyan.sqlite_cache import SQLiteCache
 
-from barda.base_importer import BaseImporter
 from barda.exceptions import ApiError
 from barda.gcd.db import DB
 from barda.gcd.gcd_issue import GCD_Issue, Rating
 from barda.ignore_resources import Ignore_Characters, Ignore_Creators, Ignore_Teams
 from barda.image import CVImage
+from barda.importer_base import BaseImporter
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles

@@ -11,10 +11,10 @@ from comicgeeks import Comic_Geeks
 from comicgeeks.Comic_Geeks import Character, Issue
 from mokkari.series import SeriesList
 
-from barda.base_importer import BaseImporter
 from barda.exceptions import ApiError
 from barda.gcd.gcd_issue import Rating
 from barda.image import CVImage
+from barda.importer_base import BaseImporter
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.validators import NumberValidator

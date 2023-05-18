@@ -1,6 +1,6 @@
 import pytest
 
-from barda.cv_importer import ComicVineImporter
+from barda.importer_comic_vine import ComicVineImporter
 from barda.settings import BardaSettings
 
 test_data = [

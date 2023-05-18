@@ -131,20 +131,25 @@ class GcdUpdate:
 
         data: dict[str, Any] = {}
         updated = False
+        msg = "Changed:"
         if gcd_stories is not None and issue.story_titles != gcd_stories:
             data["name"] = gcd_stories
+            msg += f"\n\tStories: {gcd_stories}"
             updated = True
 
         if gcd.barcode is not None and issue.upc != gcd.barcode:
             data["upc"] = gcd.barcode
+            msg += f"\n\tBarcode: {gcd.barcode}"
             updated = True
 
         if gcd.price is not None and issue.price != gcd.price:
             data["price"] = gcd.price
+            msg += f"\n\tPrice: {gcd.price}"
             updated = True
 
         if gcd.pages is not None and issue.page_count != gcd.pages:
             data["page"] = gcd.pages
+            msg += f"\n\tPages: {gcd.pages}"
             updated = True
 
         if not updated:
@@ -161,6 +166,8 @@ class GcdUpdate:
                 style=Styles.WARNING,
             )
             return False
+
+        questionary.print(msg, style=Styles.SUCCESS)
 
         return True
 

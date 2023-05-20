@@ -968,7 +968,7 @@ class ComicVineImporter(BaseImporter):
         # Retrieve Issue List from Metron
         metron_issues = self.metron.issues_list(params={"series_id": series_id, "missing_cv_id": True})  # type: ignore
         if not metron_issues:
-            questionary.print("No issues on metron need a Comic Vine ID.")
+            questionary.print("No issues on metron need a Comic Vine ID.", style=Styles.SUCCESS)
             return
 
         questionary.print(

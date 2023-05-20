@@ -1,4 +1,5 @@
 import datetime
+import operator
 import uuid
 from enum import Enum, auto, unique
 from logging import getLogger
@@ -728,7 +729,8 @@ class ComicVineImporter(BaseImporter):
             results = self.cv.volume_list(
                 params={
                     "filter": f"name:{series}",
-                }
+                },
+                max_results=1500,
             )
         except ServiceError:
             questionary.print(
@@ -739,6 +741,8 @@ class ComicVineImporter(BaseImporter):
 
         if not results:
             return None
+
+        results.sort(key=operator.attrgetter("name"))
 
         choices = self._create_series_choices(results)
 
@@ -850,6 +854,7 @@ class ComicVineImporter(BaseImporter):
             "characters": character_lst,
             "teams": team_lst,
             "arcs": arc_lst,
+            "cv_id": cv_issue.issue_id,
         }
         try:
             resp = self.barda.post_issue(data)
@@ -937,3 +942,74 @@ class ComicVineImporter(BaseImporter):
                         )
         else:
             print("Nothing found")
+
+    def _patch_cvid(self, cv_id: int, metron_id: int) -> bool:
+        data = {"cv_id": cv_id}
+        try:
+            self.barda.patch_issue(metron_id, data)
+        except ApiError:
+            questionary.print(
+                f"Failed to update Metron. Metron ID: {metron_id} CV ID:{cv_id}",
+                style=Styles.ERROR,
+            )
+            return False
+        return True
+
+    def import_cvid(self) -> None:
+        if not (series := self._what_series()):
+            return
+
+        # Get Metron Series ID
+        series_id = self._get_series_id(series)
+        if series_id is None:
+            questionary.print("Unable to get Series ID. Exiting...", style=Styles.ERROR)
+            return
+
+        # Retrieve Issue List from Metron
+        metron_issues = self.metron.issues_list(params={"series_id": series_id, "missing_cv_id": True})  # type: ignore
+        if not metron_issues:
+            questionary.print("No issues on metron need a Comic Vine ID.")
+            return
+
+        questionary.print(
+            f"Retrieved data for {len(metron_issues)} issues from Metron", style=Styles.SUCCESS
+        )
+
+        # Retrieve Issue List from Comic Vine
+        try:
+            cv_list = self.cv.issue_list(
+                params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"},
+                max_results=1500,
+            )
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve issue list from Comic Vine for Series: {series.name}.",
+                style=Styles.ERROR,
+            )
+            return
+
+        questionary.print(
+            f"Retrieved data for {len(cv_list)} issues from Comic Vine", style=Styles.SUCCESS
+        )
+
+        # Now compare lists and send data to Metron.
+        for x in cv_list:
+            idx = next((i for i, item in enumerate(metron_issues) if item.number == x.number), None)
+            if idx is None:
+                questionary.print(
+                    f"No issue found on Metron for '{series.name} #{x.number}'",
+                    style=Styles.WARNING,
+                )
+                continue
+
+            if self._patch_cvid(x.issue_id, metron_issues[idx].id):
+                questionary.print(
+                    f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                    style=Styles.SUCCESS,
+                )
+
+            else:
+                questionary.print(
+                    f"Failed to update '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                    style=Styles.WARNING,
+                )

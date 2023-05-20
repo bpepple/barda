@@ -17,6 +17,7 @@ from barda.validators import NumberValidator
 class TaskType(Enum):
     Import_Series = auto()
     Import_LOCG = auto()
+    Import_CVID = auto()
     Update_Issue = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
@@ -151,6 +152,10 @@ class Runner:
                 if self.config.cv_api_key:
                     with ComicVineImporter(self.config) as importer_obj:
                         importer_obj.run()
+            case TaskType.Import_CVID.value:
+                if self.config.cv_api_key:
+                    with ComicVineImporter(self.config) as importer_obj:
+                        importer_obj.import_cvid()
             case TaskType.Update_Resource.value:
                 self._update_resource_key()
             case TaskType.Delete_Resource.value:

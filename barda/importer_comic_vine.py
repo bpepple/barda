@@ -957,7 +957,7 @@ class ComicVineImporter(BaseImporter):
             return False
         return True
 
-    def import_cvid(self) -> None:
+    def import_cvid_by_series(self) -> None:
         if not (series := self._what_series()):
             return
 

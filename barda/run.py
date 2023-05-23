@@ -159,7 +159,7 @@ class Runner:
             case TaskType.Import_CVID_by_Series.value:
                 if self.config.cv_api_key:
                     with ComicVineImporter(self.config) as importer_obj:
-                        importer_obj.import_cvid()
+                        importer_obj.import_cvid_by_series()
             case TaskType.Update_Resource.value:
                 self._update_resource_key()
             case TaskType.Delete_Resource.value:

@@ -8,6 +8,7 @@ from mokkari.publisher import PublishersList
 from mokkari.series import SeriesTypeList
 from mokkari.session import Session
 
+from barda import __version__
 from barda.post_data import PostData
 from barda.settings import BardaSettings
 from barda.validators import YearValidator
@@ -36,7 +37,7 @@ class BaseImporter:
     def __init__(self, config: BardaSettings) -> None:
         self.image_dir = TemporaryDirectory()
         self.barda = PostData(config.metron_user, config.metron_password)
-        self.metron: Session = api(config.metron_user, config.metron_password, None)  # type: ignore
+        self.metron: Session = api(config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}")  # type: ignore
         self.series_type: SeriesTypeList | None = None
 
     def __enter__(self):

@@ -138,7 +138,9 @@ class ComicVineImporter(BaseImporter):
     def _select_metron_series(series_lst: SeriesList, series: VolumeEntry):
         choices: List[questionary.Choice] = []
         for i in series_lst:
-            choice = questionary.Choice(title=i.display_name, value=i.id)
+            choice = questionary.Choice(
+                title=f"{i.display_name} - {i.issue_count} issues", value=i.id
+            )
             choices.append(choice)
         choices.append(questionary.Choice(title="None", value=""))
         return questionary.select(

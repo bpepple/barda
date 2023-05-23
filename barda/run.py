@@ -17,11 +17,15 @@ from barda.validators import NumberValidator
 class TaskType(Enum):
     Import_Series = auto()
     Import_LOCG = auto()
-    Import_CVID = auto()
+    Import_CVID_by_Series = auto()
+    Import_CVID_by_Publisher = auto()
     Update_Issue = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
     Marvel_Releases = auto()
+
+    def __str__(self) -> str:
+        return self.name.replace("_", " ")
 
 
 class Runner:
@@ -72,7 +76,7 @@ class Runner:
     def _what_task():
         choices = []
         for task in TaskType:
-            choice = questionary.Choice(title=f"{task.name}", value=task.value)
+            choice = questionary.Choice(title=f"{task}", value=task.value)
             choices.append(choice)
         choices.append(questionary.Choice(title="Quit", value="q"))
         result = questionary.select("Choose what task you want to do", choices=choices).ask()
@@ -152,7 +156,7 @@ class Runner:
                 if self.config.cv_api_key:
                     with ComicVineImporter(self.config) as importer_obj:
                         importer_obj.run()
-            case TaskType.Import_CVID.value:
+            case TaskType.Import_CVID_by_Series.value:
                 if self.config.cv_api_key:
                     with ComicVineImporter(self.config) as importer_obj:
                         importer_obj.import_cvid()

@@ -718,8 +718,9 @@ class ComicVineImporter(BaseImporter):
     def _create_series_choices(results) -> List[questionary.Choice]:
         choices = []
         for s in results:
+            pub = s.publisher.name if s.publisher is not None else ""
             choice = questionary.Choice(
-                title=f"{s.name} ({s.start_year}) - {s.issue_count} issues", value=s
+                title=f"{s.name} ({s.start_year}) - {s.issue_count} issues ({pub})", value=s
             )
             choices.append(choice)
         choices.append(questionary.Choice(title="Skip", value=""))
@@ -956,6 +957,101 @@ class ComicVineImporter(BaseImporter):
             )
             return False
         return True
+
+    def _get_cv_series(self, metron_series) -> VolumeEntry | None:
+        name = metron_series.display_name.rsplit(" ", 1)[0]
+        try:
+            results = self.cv.volume_list(
+                params={
+                    "filter": f"name:{name},start_year:{metron_series.year_began}",
+                },
+                max_results=1500,
+            )
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve information from Comic Vine for Series: {metron_series.display_name}.",
+                style=Styles.ERROR,
+            )
+            return None
+
+        if not results:
+            return None
+
+        results.sort(key=operator.attrgetter("name"))
+
+        choices = self._create_series_choices(results)
+
+        return questionary.select("Which series to import", choices=choices).ask()
+
+    def import_cvid_by_publisher(self) -> None:
+        pub_id = self._choose_publisher()
+        series_type_id = self._choose_series_type()
+        series_lst = self.metron.series_list(
+            params={"publisher_id": pub_id, "series_type_id": series_type_id}
+        )
+        for s in series_lst:
+            questionary.print(f"Searching for {s.display_name}", style=Styles.TITLE)
+            metron_issues = self.metron.issues_list(
+                params={"series_id": s.id, "missing_cv_id": True}
+            )
+            if metron_issues:
+                questionary.print(
+                    f"Retrieved data for {len(metron_issues)} issues from Metron",
+                    style=Styles.SUCCESS,
+                )
+                # Let's see if we can get the series from Comic Vine
+                cv_series = self._get_cv_series(s)
+                if cv_series is None or not cv_series:
+                    questionary.print(
+                        f"No series found for {s.display_name} on Comic Vine. Skipping...",
+                        style=Styles.WARNING,
+                    )
+                    continue
+
+                # Retrieve Issue List from Comic Vine
+                try:
+                    cv_list = self.cv.issue_list(
+                        params={"filter": f"volume:{cv_series.volume_id}", "sort": "cover_date:asc"}
+                    )
+                except ServiceError:
+                    questionary.print(
+                        f"Failed to retrieve issue list from Comic Vine for Series: {cv_series.name}.",
+                        style=Styles.ERROR,
+                    )
+                    continue
+                questionary.print(
+                    f"Retrieved data for {len(cv_list)} issues from Comic Vine",
+                    style=Styles.SUCCESS,
+                )
+            else:
+                questionary.print(
+                    f"No issues need to be fixed for '{s.display_name}'", style=Styles.SUCCESS
+                )
+                continue
+
+            # Now compare lists and send data to Metron.
+            for x in cv_list:
+                idx = next(
+                    (i for i, item in enumerate(metron_issues) if item.number == x.number), None
+                )
+                if idx is None:
+                    questionary.print(
+                        f"No issue found on Metron for '{x.volume.name} #{x.number}'",
+                        style=Styles.WARNING,
+                    )
+                    continue
+
+                if self._patch_cvid(x.issue_id, metron_issues[idx].id):
+                    questionary.print(
+                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                        style=Styles.SUCCESS,
+                    )
+
+                else:
+                    questionary.print(
+                        f"Failed to update '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                        style=Styles.WARNING,
+                    )
 
     def import_cvid_by_series(self) -> None:
         if not (series := self._what_series()):

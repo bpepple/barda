@@ -723,7 +723,12 @@ class ComicVineImporter(BaseImporter):
                 title=f"{s.name} ({s.start_year}) - {s.issue_count} issues ({pub})", value=s
             )
             choices.append(choice)
-        choices.append(questionary.Choice(title="Skip", value=""))
+        choices.extend(
+            (
+                questionary.Choice(title="Skip", value=""),
+                questionary.Choice(title="Quit", value="-1"),
+            )
+        )
         return choices
 
     def _what_series(self) -> VolumeEntry | None:
@@ -1001,28 +1006,35 @@ class ComicVineImporter(BaseImporter):
                 )
                 # Let's see if we can get the series from Comic Vine
                 cv_series = self._get_cv_series(s)
-                if cv_series is None or not cv_series:
-                    questionary.print(
-                        f"No series found for {s.display_name} on Comic Vine. Skipping...",
-                        style=Styles.WARNING,
-                    )
-                    continue
-
-                # Retrieve Issue List from Comic Vine
-                try:
-                    cv_list = self.cv.issue_list(
-                        params={"filter": f"volume:{cv_series.volume_id}", "sort": "cover_date:asc"}
-                    )
-                except ServiceError:
-                    questionary.print(
-                        f"Failed to retrieve issue list from Comic Vine for Series: {cv_series.name}.",
-                        style=Styles.ERROR,
-                    )
-                    continue
-                questionary.print(
-                    f"Retrieved data for {len(cv_list)} issues from Comic Vine",
-                    style=Styles.SUCCESS,
-                )
+                match cv_series:
+                    case "-1":
+                        questionary.print("Exiting...", style=Styles.SUCCESS)
+                        exit(0)
+                    case None | "":
+                        questionary.print(
+                            f"No series found for {s.display_name} on Comic Vine. Skipping...",
+                            style=Styles.WARNING,
+                        )
+                        continue
+                    case _:
+                        # Retrieve Issue List from Comic Vine
+                        try:
+                            cv_list = self.cv.issue_list(
+                                params={
+                                    "filter": f"volume:{cv_series.volume_id}",
+                                    "sort": "cover_date:asc",
+                                }
+                            )
+                        except ServiceError:
+                            questionary.print(
+                                f"Failed to retrieve issue list from Comic Vine for Series: {cv_series.name}.",
+                                style=Styles.ERROR,
+                            )
+                            continue
+                        questionary.print(
+                            f"Retrieved data for {len(cv_list)} issues from Comic Vine",
+                            style=Styles.SUCCESS,
+                        )
             else:
                 questionary.print(
                     f"No issues need to be fixed for '{s.display_name}'", style=Styles.SUCCESS

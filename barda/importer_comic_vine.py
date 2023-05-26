@@ -963,7 +963,7 @@ class ComicVineImporter(BaseImporter):
         try:
             results = self.cv.volume_list(
                 params={
-                    "filter": f"name:{name},start_year:{metron_series.year_began}",
+                    "filter": f"name:{name}",
                 },
                 max_results=1500,
             )

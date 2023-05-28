@@ -50,6 +50,46 @@ class CV_Creator(Enum):
     Mike_Richardson = 45055
 
 
+BAD_PUBLISHERS = [
+    "Editoriale Corno",
+    "Editions Héritage",
+    "Editorial Muchnik",
+    "Panini España",
+    "Del Rey",
+    "Cosplay Comics",
+    "Eternity",
+    "Takeshobo",
+    "self published",
+    "Scholastic Book Services",
+    "Victory Productions",
+    "Blackthorne",
+    "Carlsen Verlag",
+    "Hakusensha",
+    "Irodori Comics",
+    "Panini Nederland",
+    "Panini España",
+    "Panini Verlag",
+    "Panini France",
+    "Panini Comics",
+    "Thorpe & Porter",
+    "Brown Watson",
+    "Titan Books",
+    "Egmont Publishing (UK)",
+    "IPC Magazines Ltd.",
+    "Titan Comics",
+    "Atlas Publishing",
+    "Federal",
+    "Stafford Pemberton",
+    "Atlas Publications Pty. Ltd.",
+    "World Distributors",
+    "Urban Comics",
+    "Ediciones Zinco",
+    "ECC Ediciones",
+    "Murray Comics",
+    "Planeta DeAgostini",
+]
+
+
 class ComicVineImporter(BaseImporter):
     def __init__(self, config: BardaSettings) -> None:
         super(ComicVineImporter, self).__init__(config)
@@ -718,7 +758,10 @@ class ComicVineImporter(BaseImporter):
     def _create_series_choices(results) -> List[questionary.Choice]:
         choices = []
         for s in results:
+            # Skip bad CV publishers
             pub = s.publisher.name if s.publisher is not None else ""
+            if pub in BAD_PUBLISHERS:
+                continue
             choice = questionary.Choice(
                 title=f"{s.name} ({s.start_year}) - {s.issue_count} issues ({pub})", value=s
             )
@@ -726,7 +769,7 @@ class ComicVineImporter(BaseImporter):
         choices.extend(
             (
                 questionary.Choice(title="Skip", value=""),
-                questionary.Choice(title="Quit", value="-1"),
+                questionary.Choice(title="Quit", value=-1),
             )
         )
         return choices
@@ -963,7 +1006,7 @@ class ComicVineImporter(BaseImporter):
             return False
         return True
 
-    def _get_cv_series(self, metron_series) -> VolumeEntry | None:
+    def _get_cv_series(self, metron_series, num: int) -> VolumeEntry | None:
         name = metron_series.display_name.rsplit(" ", 1)[0]
         try:
             results = self.cv.volume_list(
@@ -986,7 +1029,10 @@ class ComicVineImporter(BaseImporter):
 
         choices = self._create_series_choices(results)
 
-        return questionary.select("Which series to import", choices=choices).ask()
+        return questionary.select(
+            f"Which series to import for '{metron_series.display_name}: {num} issues'",
+            choices=choices,
+        ).ask()
 
     def import_cvid_by_publisher(self) -> None:
         pub_id = self._choose_publisher()
@@ -994,20 +1040,22 @@ class ComicVineImporter(BaseImporter):
         series_lst = self.metron.series_list(
             params={"publisher_id": pub_id, "series_type_id": series_type_id}
         )
+        questionary.print(f"Going to start matching {len(series_lst)} series", style=Styles.SUCCESS)
         for s in series_lst:
             questionary.print(f"Searching for {s.display_name}", style=Styles.TITLE)
             metron_issues = self.metron.issues_list(
                 params={"series_id": s.id, "missing_cv_id": True}
             )
             if metron_issues:
+                num_issues = len(metron_issues)
                 questionary.print(
-                    f"Retrieved data for {len(metron_issues)} issues from Metron",
+                    f"Retrieved data for {num_issues} issues from Metron",
                     style=Styles.SUCCESS,
                 )
                 # Let's see if we can get the series from Comic Vine
-                cv_series = self._get_cv_series(s)
+                cv_series = self._get_cv_series(s, num_issues)
                 match cv_series:
-                    case "-1":
+                    case -1:
                         questionary.print("Exiting...", style=Styles.SUCCESS)
                         exit(0)
                     case None | "":

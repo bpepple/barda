@@ -26,7 +26,7 @@ from barda.importer_base import BaseImporter
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
-from barda.utils import cleanup_html, fix_story_chapters
+from barda.utils import clean_search_series_title, cleanup_html, fix_story_chapters
 from barda.validators import NumberValidator
 
 LOGGER = getLogger(__name__)
@@ -1007,11 +1007,12 @@ class ComicVineImporter(BaseImporter):
         return True
 
     def _get_cv_series(self, metron_series, num: int) -> VolumeEntry | None:
-        name = metron_series.display_name.rsplit(" ", 1)[0]
+        title = metron_series.display_name.rsplit(" ", 1)[0]
+        cleaned_title = clean_search_series_title(title)
         try:
             results = self.cv.volume_list(
                 params={
-                    "filter": f"name:{name}",
+                    "filter": f"name:{cleaned_title}",
                 },
                 max_results=1500,
             )

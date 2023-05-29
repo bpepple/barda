@@ -4,6 +4,13 @@ from bs4 import BeautifulSoup
 from titlecase import titlecase
 
 
+def clean_search_series_title(title: str) -> str:
+    new_string = title.lower().replace("the ", "", 1)
+    # new_string = new_string.replace(" & ", " ")
+    # new_string.replace(" and ", " ")
+    return new_string.replace(" / ", "/")
+
+
 def fix_story_chapters(story: str) -> str:
     story_types = ["chapter", "part", "conclusion"]
     lower_story_str = story.lower()

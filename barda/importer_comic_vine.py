@@ -1006,22 +1006,35 @@ class ComicVineImporter(BaseImporter):
             return False
         return True
 
-    def _get_cv_series(self, metron_series, num: int) -> VolumeEntry | None:
-        title = metron_series.display_name.rsplit(" ", 1)[0]
-        cleaned_title = clean_search_series_title(title)
+    def _get_series_from_cv(self, series_name: str, m_series) -> List[VolumeEntry] | None:
         try:
-            results = self.cv.volume_list(
+            return self.cv.volume_list(
                 params={
-                    "filter": f"name:{cleaned_title}",
+                    "filter": f"name:{series_name}",
                 },
                 max_results=1500,
             )
         except ServiceError:
             questionary.print(
-                f"Failed to retrieve information from Comic Vine for Series: {metron_series.display_name}.",
+                f"Failed to retrieve information from Comic Vine for Series: {m_series.display_name}.",
                 style=Styles.ERROR,
             )
             return None
+
+    def _get_cv_series(self, metron_series, num: int) -> VolumeEntry | None:
+        title = metron_series.display_name.rsplit(" ", 1)[0]  # Remove the series year
+        cleaned_title = clean_search_series_title(title)
+        results = self._get_series_from_cv(cleaned_title, metron_series)
+
+        if not results:
+            if not questionary.confirm(
+                f"No series for '{metron_series.display_name}' on Comic Vine. Do you want to do another search?"
+            ).ask():
+                return None
+            series_query = questionary.text(
+                "What name should we use to search for the series?"
+            ).ask()
+            results = self._get_series_from_cv(series_query, metron_series)
 
         if not results:
             return None

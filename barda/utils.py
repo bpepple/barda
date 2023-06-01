@@ -5,7 +5,9 @@ from titlecase import titlecase
 
 
 def clean_search_series_title(title: str) -> str:
-    new_string = title.lower().replace("the ", "", 1)
+    new_string = title.lower()
+    if new_string.startswith("the "):
+        new_string = new_string.replace("the ", "", 1)
     # new_string = new_string.replace(" & ", " ")
     # new_string.replace(" and ", " ")
     return new_string.replace(" / ", "/")

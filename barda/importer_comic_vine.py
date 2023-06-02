@@ -98,6 +98,8 @@ class ComicVineImporter(BaseImporter):
         self.conversions = ResourceKeys(str(config.conversions))
         self.add_characters = False
         self.role_list: RoleList | None = None
+        self.ignore_characters: List[int] = []
+        self.ignore_teams: List[int] = []
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -634,13 +636,18 @@ class ComicVineImporter(BaseImporter):
 
         if questionary.confirm(f"Do you want to create a team for '{team.name}' on Metron?").ask():
             return self._create_team(team.id_)
-        else:
-            return None
+        if questionary.confirm(
+            "Do you want to ignore this team during the rest of this session?"
+        ).ask():
+            self.ignore_teams.append(team.id_)
+        return None
 
     def _create_team_list(self, teams: List[GenericEntry]) -> List[int]:
         team_lst = []
         for team in teams:
             if self._ignore_resource(Ignore_Teams, team.id_):
+                continue
+            if self.ignore_teams and team.id_ in self.ignore_teams:
                 continue
             metron_id = self.conversions.get(Resources.Team.value, team.id_)
             if metron_id is None:
@@ -735,13 +742,18 @@ class ComicVineImporter(BaseImporter):
             f"Do you want to create a character for '{character.name}' on Metron?"
         ).ask():
             return self._create_character(character.id_)
-        else:
-            return None
+        if questionary.confirm(
+            "Do you want to ignore this character during the rest of this session?"
+        ).ask():
+            self.ignore_characters.append(character.id_)
+        return None
 
     def _create_character_list(self, characters: List[GenericEntry]) -> List[int]:
         character_lst = []
         for character in characters:
             if self._ignore_resource(Ignore_Characters, character.id_):
+                continue
+            if self.ignore_characters and character.id_ in self.ignore_characters:
                 continue
             metron_id = self.conversions.get(Resources.Character.value, character.id_)
             if metron_id is None:

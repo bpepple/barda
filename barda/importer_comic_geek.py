@@ -17,6 +17,7 @@ from barda.image import CVImage
 from barda.importer_base import BaseImporter
 from barda.settings import BardaSettings
 from barda.styles import Styles
+from barda.utils import clean_search_series_title
 from barda.validators import NumberValidator
 
 
@@ -138,7 +139,7 @@ class GeeksImporter(BaseImporter):
         ).ask()
 
     def _check_metron_for_series(self, series: str) -> str | None:
-        if series_lst := self.metron.series_list({"name": series}):
+        if series_lst := self.metron.series_list({"name": clean_search_series_title(series)}):
             return self._select_metron_series(series_lst, series)
 
         if not questionary.confirm(

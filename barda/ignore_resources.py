@@ -107,6 +107,7 @@ class Ignore_Characters(Enum):
 class Ignore_Creators(Enum):
     Typeset = 67476
     Robert_Simpson = 69288  # Lucasfilm editor
+    Edgar_Rice_Burroughs = 58037
 
 
 @unique

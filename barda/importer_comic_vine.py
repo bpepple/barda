@@ -888,7 +888,7 @@ class ComicVineImporter(BaseImporter):
         character_lst = (
             self._create_character_list(cv_issue.characters) if self.add_characters else []
         )
-        team_lst = self._create_team_list(cv_issue.teams)
+        team_lst = self._create_team_list(cv_issue.teams) if self.add_characters else []
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
         img = self._get_image(cv_issue.image.original, ImageType.Cover)
         if gcd is not None:

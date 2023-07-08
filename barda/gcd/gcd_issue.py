@@ -170,7 +170,10 @@ class GCD_Issue:
                 | "rated m/ mature"
             ):
                 return Rating.Mature.value
-            case "approved by the comics code authority":
+            case (
+                "approved by the comics code authority"
+                | "authorized a. c. m. p. conforms to the comics code"
+            ):
                 return Rating.CCA.value
             case _:
                 LOGGER.error(f"Invalid rating: '{rating}'")

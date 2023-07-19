@@ -127,7 +127,8 @@ class GeeksImporter(BaseImporter):
 
         return None if new_series is None else new_series["id"]
 
-    def _select_metron_series(self, series_lst: SeriesList, series):
+    @staticmethod
+    def _select_metron_series(series_lst: SeriesList, series):
         choices: List[questionary.Choice] = []
         for i in series_lst:
             choice = questionary.Choice(title=i.display_name, value=i.id)
@@ -185,9 +186,30 @@ class GeeksImporter(BaseImporter):
         return new_date.replace(day=1)
 
     @staticmethod
-    def _get_pages(pages: str) -> int | None:
+    def _get_pages(issue: Issue) -> int | str:
+        try:
+            pages = issue.details["page_count"]
+        except KeyError:
+            return ""
+
         tmp_page = pages.split(" ")
-        return int(tmp_page[0]) if tmp_page[0].isdecimal() else None
+        return int(tmp_page[0]) if tmp_page[0].isdecimal() else ""
+
+    @staticmethod
+    def _get_upc(issue: Issue) -> str:
+        try:
+            upc = issue.details["upc"]
+        except KeyError:
+            upc = ""
+        return upc
+
+    @staticmethod
+    def _get_sku(issue: Issue) -> str:
+        try:
+            sku = issue.details["distributor_sku"].upper()
+        except KeyError:
+            sku = ""
+        return sku
 
     def _create_issue(self, issue: Issue) -> None:
         series_name = self._get_series_name(issue.cover["name"])
@@ -197,23 +219,11 @@ class GeeksImporter(BaseImporter):
             return
         store_date = self._get_store_date(issue.store_date)
         cover_date = self._get_cover_date(series_id, store_date)
-        try:
-            upc = issue.details["upc"]
-        except KeyError:
-            upc = ""
-        try:
-            sku = issue.details["distributor_sku"].upper()
-        except KeyError:
-            sku = ""
+        upc = self._get_upc(issue)
+        sku = self._get_sku(issue)
         cover = self._get_cover(issue.cover["image"])
         character_lst = self._create_characters_list(issue.characters)
-        try:
-            pages = self._get_pages(issue.details["page_count"])
-        except KeyError:
-            pages = ""
-
-        if pages is None:
-            pages = ""
+        pages = self._get_pages(issue)
 
         data = {
             "series": series_id,

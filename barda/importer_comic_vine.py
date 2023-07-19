@@ -12,7 +12,8 @@ from mokkari.issue import RoleList
 from mokkari.series import SeriesList
 from mokkari.team import TeamsList
 from simyan.comicvine import Comicvine as CV
-from simyan.comicvine import Issue, VolumeEntry
+from simyan.comicvine import Issue as CV_Issue
+from simyan.comicvine import VolumeEntry
 from simyan.exceptions import ServiceError
 from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
 from simyan.sqlite_cache import SQLiteCache
@@ -862,7 +863,7 @@ class ComicVineImporter(BaseImporter):
     #########
     # Issue #
     #########
-    def _create_issue(self, series_id: int, cv_issue: Issue, gcd_series_id):
+    def _create_issue(self, series_id: int, cv_issue: CV_Issue, gcd_series_id):
         gcd_stories = None
         if cv_issue.number:
             gcd = self._get_gcd_issue(gcd_series_id, cv_issue.number)

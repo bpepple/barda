@@ -6,7 +6,7 @@ from os import environ
 from pathlib import Path, PurePath
 from typing import Optional
 
-from xdg.BaseDirectory import save_config_path
+from xdg.BaseDirectory import save_cache_path, save_config_path
 
 
 class BardaSettings:
@@ -14,7 +14,7 @@ class BardaSettings:
 
     @staticmethod
     def get_settings_folder() -> Path:
-        """Method to determine where the users settings should be saved"""
+        """Method to determine where the users settings should be saved."""
 
         if platform.system() != "Windows":
             return Path(save_config_path("barda"))
@@ -35,10 +35,11 @@ class BardaSettings:
         # setting & json file locations
         folder = Path(config_dir) if config_dir else BardaSettings.get_settings_folder()
         self.settings_file = folder / "settings.ini"
-        self.conversions = folder / "barda.db"
-        self.cv_cache = folder / "cv.db"
-        self.metron_cache = folder / "metron.db"
-        self.marvel_cache = folder / "marvel.db"
+        cache_folder = Path(save_cache_path("barda"))
+        self.conversions = cache_folder / "barda.db"
+        self.cv_cache = cache_folder / "cv.db"
+        self.metron_cache = cache_folder / "metron.db"
+        self.marvel_cache = cache_folder / "marvel.db"
 
         if not self.settings_file.parent.exists():
             self.settings_file.parent.mkdir()

@@ -138,6 +138,7 @@ class GCD_Issue:
                 | "rated t teen+"
                 | "teen plus"
                 | "teen plus / t+"
+                | "rated t+/teen plus"
             ):
                 return Rating.Teen_Plus.value
             # Mature

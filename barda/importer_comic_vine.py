@@ -101,6 +101,7 @@ class ComicVineImporter(BaseImporter):
         self.role_list: RoleList | None = None
         self.ignore_characters: List[int] = []
         self.ignore_teams: List[int] = []
+        self.ignore_creators: List[int] = []
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -372,6 +373,8 @@ class ComicVineImporter(BaseImporter):
         for i in credits:
             if self._ignore_resource(Ignore_Creators, i.id_):
                 continue
+            if self.ignore_creators and i.id_ in self.ignore_creators:
+                continue
             person = GenericEntry(id=i.id_, name=i.name, api_detail_url="")
             creator_id = self.conversions.get(Resources.Creator.value, i.id_)
             if creator_id is None:
@@ -474,8 +477,11 @@ class ComicVineImporter(BaseImporter):
             f"Do you want to create a creator for {creator.name} on Metron?"
         ).ask():
             return self._create_creator(creator.id_)
-        else:
-            return None
+        if questionary.confirm(
+            "Do you want to ignore this creator during the rest of this session?"
+        ).ask():
+            self.ignore_creators.append(creator.id_)
+        return None
 
     def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
         creator_lst = []

@@ -998,7 +998,7 @@ class ComicVineImporter(BaseImporter):
 
                 try:
                     cv_issue = self.cv.issue(i.issue_id)
-                except ServiceError:
+                except (ServiceError, requests.JSONDecodeError):
                     questionary.print(
                         f"Failed to retrieve information from Comic Vine for Issue: {i.volume.name} #{i.number}. Skipping...",
                         style=Styles.ERROR,

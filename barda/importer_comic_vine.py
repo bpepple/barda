@@ -173,7 +173,8 @@ class ComicVineImporter(BaseImporter):
         ).ask():
             self.conversions.store(resource.value, cv_entry.id_, metron_id)
             questionary.print(
-                f"Added '{cv_entry.name}' to {resource.name} conversions. CV: {cv_entry.id_}, Metron: {metron_id}",
+                f"Added '{cv_entry.name}' to {resource.name} conversions. "
+                f"CV: {cv_entry.id_}, Metron: {metron_id}",
                 style=Styles.SUCCESS,
             )
         return metron_id
@@ -197,7 +198,8 @@ class ComicVineImporter(BaseImporter):
             return self._select_metron_series(series_lst, series)
 
         if not questionary.confirm(
-            f"No series for '{series.name} ({series.start_year})' on Metron. Do you want to do another search?"
+            f"No series for '{series.name} ({series.start_year})' on Metron. "
+            "Do you want to do another search?"
         ).ask():
             return None
 
@@ -433,7 +435,8 @@ class ComicVineImporter(BaseImporter):
 
         self.conversions.store(Resources.Creator.value, cv_data.creator_id, resp["id"])
         questionary.print(
-            f"Added '{name}' to {Resources.Creator.name} conversions. CV: {cv_data.creator_id}, Metron: {resp['id']}",
+            f"Added '{name}' to {Resources.Creator.name} conversions. CV: "
+            f"{cv_data.creator_id}, Metron: {resp['id']}",
             style=Styles.SUCCESS,
         )
         LOGGER.debug("Exiting create_creator()...")
@@ -1000,7 +1003,8 @@ class ComicVineImporter(BaseImporter):
                     cv_issue = self.cv.issue(i.issue_id)
                 except (ServiceError, requests.JSONDecodeError):
                     questionary.print(
-                        f"Failed to retrieve information from Comic Vine for Issue: {i.volume.name} #{i.number}. Skipping...",
+                        "Failed to retrieve information from Comic Vine for Issue: "
+                        f"{i.volume.name} #{i.number}. Skipping...",
                         style=Styles.ERROR,
                     )
                     continue
@@ -1038,7 +1042,8 @@ class ComicVineImporter(BaseImporter):
             )
         except ServiceError:
             questionary.print(
-                f"Failed to retrieve information from Comic Vine for Series: {m_series.display_name}.",
+                "Failed to retrieve information from Comic Vine for Series: "
+                f"{m_series.display_name}.",
                 style=Styles.ERROR,
             )
             return None
@@ -1050,7 +1055,8 @@ class ComicVineImporter(BaseImporter):
 
         if not results:
             if not questionary.confirm(
-                f"No series for '{metron_series.display_name}' on Comic Vine. Do you want to do another search?"
+                f"No series for '{metron_series.display_name}' on Comic Vine. "
+                "Do you want to do another search?"
             ).ask():
                 return None
             series_query = questionary.text(
@@ -1111,7 +1117,8 @@ class ComicVineImporter(BaseImporter):
                             )
                         except ServiceError:
                             questionary.print(
-                                f"Failed to retrieve issue list from Comic Vine for Series: {cv_series.name}.",
+                                "Failed to retrieve issue list from Comic Vine for Series: "
+                                f"{cv_series.name}.",
                                 style=Styles.ERROR,
                             )
                             continue
@@ -1139,13 +1146,15 @@ class ComicVineImporter(BaseImporter):
 
                 if self._patch_cvid(x.issue_id, metron_issues[idx].id):
                     questionary.print(
-                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} "
+                        f"#{metron_issues[idx].number}'",
                         style=Styles.SUCCESS,
                     )
 
                 else:
                     questionary.print(
-                        f"Failed to update '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                        f"Failed to update '{metron_issues[idx].series.name} "
+                        f"#{metron_issues[idx].number}'",
                         style=Styles.WARNING,
                     )
 
@@ -1161,7 +1170,7 @@ class ComicVineImporter(BaseImporter):
                 continue
 
             # Retrieve Issue List from Metron
-            metron_issues = self.metron.issues_list(params={"series_id": series_id, "missing_cv_id": True})  # type: ignore
+            metron_issues = self.metron.issues_list(params={"series_id": series_id, "missing_cv_id": True})  # type: ignore  # noqa: E501
             if not metron_issues:
                 questionary.print("No issues on metron need a Comic Vine ID.", style=Styles.SUCCESS)
                 continue
@@ -1201,12 +1210,14 @@ class ComicVineImporter(BaseImporter):
 
                 if self._patch_cvid(x.issue_id, metron_issues[idx].id):
                     questionary.print(
-                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} "
+                        f"#{metron_issues[idx].number}'",
                         style=Styles.SUCCESS,
                     )
 
                 else:
                     questionary.print(
-                        f"Failed to update '{metron_issues[idx].series.name} #{metron_issues[idx].number}'",
+                        f"Failed to update '{metron_issues[idx].series.name} "
+                        f"#{metron_issues[idx].number}'",
                         style=Styles.WARNING,
                     )

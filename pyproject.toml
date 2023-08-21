@@ -50,6 +50,10 @@ default_section = "THIRDPARTY"
 known_first_party = []
 known_third_party = ["PIL", "bs4", "comicgeeks", "dateutil", "esak", "mokkari", "mysql", "prompt_toolkit", "pytest", "questionary", "ratelimit", "requests", "simyan", "titlecase", "urllib3", "xdg"]
 
+[tool.ruff]
+fix = true
+line-length = 100
+
 [tool.coverage.run]
 source = ["barda"]
 

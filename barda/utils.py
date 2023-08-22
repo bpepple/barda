@@ -4,6 +4,16 @@ from bs4 import BeautifulSoup
 from titlecase import titlecase
 
 
+def remove_overview_text(txt: str) -> str:
+    """Remove overview text from beginning of a string if present."""
+    if not txt:
+        return txt
+    words = txt.split()
+    if words[0].lower() in ["overview", "overview:"]:
+        return " ".join(txt.split()[1:])
+    return txt
+
+
 def clean_search_series_title(title: str) -> str:
     new_string = title.lower()
     if new_string.startswith("the "):
@@ -42,7 +52,9 @@ def fix_story_chapters(story: str) -> str:
     return titlecase(story)
 
 
-def cleanup_html(string, remove_html_tables):  # sourcery skip: low-code-quality
+def cleanup_html(
+    string: str | None, remove_html_tables: bool
+) -> str:  # sourcery skip: low-code-quality
     """
     converter = html2text.HTML2Text()
     #converter.emphasis_mark = '*'

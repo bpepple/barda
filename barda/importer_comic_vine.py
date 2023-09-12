@@ -425,6 +425,7 @@ class ComicVineImporter(BaseImporter):
             "desc": desc,
             "image": img,
             "alias": [],
+            "cv_id": cv_data.creator_id,
             "birth": cv_data.date_of_birth,
             "death": cv_data.date_of_death,
         }
@@ -522,7 +523,7 @@ class ComicVineImporter(BaseImporter):
         )
         desc = questionary.text("What should be the description for this story arc?").ask()
         img = self._get_image(cv_data.image.original, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": img}
+        data = {"name": name, "desc": desc, "image": img, "cv_id": cv_data.story_arc_id}
 
         try:
             resp = self.barda.post_arc(data)
@@ -604,7 +605,7 @@ class ComicVineImporter(BaseImporter):
         )
         desc = questionary.text("What should be the description for this team?").ask()
         img = self._get_image(cv_data.image.original, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": img, "creators": []}
+        data = {"name": name, "desc": desc, "image": img, "creators": [], "cv_id": cv_data.team_id}
 
         try:
             resp = self.barda.post_team(data)
@@ -702,6 +703,7 @@ class ComicVineImporter(BaseImporter):
             "image": img,
             "teams": teams_lst,
             "creators": creators_lst,
+            "cv_id": cv_data.character_id,
         }
 
         try:
@@ -859,6 +861,7 @@ class ComicVineImporter(BaseImporter):
             "year_end": year_end,
             "genres": genres,
             "associated": [],
+            "cv_id": cv_series.volume_id,
         }
 
     def _create_series(self, cv_series: VolumeEntry) -> int | None:

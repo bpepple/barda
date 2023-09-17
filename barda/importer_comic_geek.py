@@ -38,8 +38,8 @@ class GeeksImporter(BaseImporter):
         return str(img_file)
 
     def _setup_client(self) -> None:
-        session_id = questionary.text("Enter you League of Comic Geeks session id").ask()
-        self.locg = Comic_Geeks(session_id)
+        self.locg = Comic_Geeks()
+        self.locg.login("bpepple", "kT4qy23sA54CzAWT9^y3")
 
     ##############
     # Characters #

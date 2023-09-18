@@ -1229,25 +1229,25 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 
 [[package]]
 name = "simyan"
-version = "0.13.0"
+version = "1.1.0"
 description = "A Python wrapper for the Comicvine API."
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "simyan-0.13.0-py3-none-any.whl", hash = "sha256:18bdb43b6dddc75f24ad828d41c04a2f70ae55b59f98950c50e6df9aa3f8f123"},
-    {file = "simyan-0.13.0.tar.gz", hash = "sha256:83323f811b902d58ac48b02c6de0e51c9013ff268014c136a68a57ab7e287c35"},
+    {file = "simyan-1.1.0-py3-none-any.whl", hash = "sha256:bc4a2bf61f606e318204ad65cbf6c19e4fe677c51c1dfc19ba5c92cdbaa0f832"},
+    {file = "simyan-1.1.0.tar.gz", hash = "sha256:1fc02d2c18a2cfba9dd9e9f96bea8b75e0f2211c6adf3ac4f12b3a2f6dc87a40"},
 ]
 
 [package.dependencies]
-pydantic = ">=1.10.4"
+pydantic = ">=2.2.1"
 ratelimit = ">=2.2.1"
-requests = ">=2.28.1"
+requests = ">=2.31.0"
 
 [package.extras]
-dev = ["pre-commit (>=2.21.0)"]
-docs = ["mkdocs (>=1.4.2)", "mkdocs-include-markdown-plugin (>=4.0.3)", "mkdocstrings[python] (>=0.19.1)"]
-test = ["pytest (>=7.2.0)", "pytest-cov (>=4.0.0)", "tox (>=3.27.1,<4)", "tox-pyenv (>=1.1.0)"]
+dev = ["pre-commit (>=3.3.3)"]
+docs = ["mkdocs (>=1.5.2)", "mkdocs-include-markdown-plugin (>=6.0.0)", "mkdocs-material (>=9.2.1)", "mkdocstrings[python] (>=0.22.0)"]
+test = ["pytest (>=7.4.0)", "pytest-cov (>=4.1.0)", "pytest-pretty (>=1.2.0)"]
 
 [[package]]
 name = "six"
@@ -1289,14 +1289,14 @@ regex = ["regex (>=2020.4.4)"]
 
 [[package]]
 name = "typing-extensions"
-version = "4.7.1"
-description = "Backported and Experimental Type Hints for Python 3.7+"
+version = "4.8.0"
+description = "Backported and Experimental Type Hints for Python 3.8+"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36"},
-    {file = "typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2"},
+    {file = "typing_extensions-4.8.0-py3-none-any.whl", hash = "sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0"},
+    {file = "typing_extensions-4.8.0.tar.gz", hash = "sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef"},
 ]
 
 [[package]]
@@ -1353,4 +1353,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "920019747f58d0b46a17a12ae02349f20091338cc529bcc8af9034d629bce8db"
+content-hash = "2e9e6130b8e5de59dc6d375ecf682d83036ff48f43436f73dd8f911fb2ac210e"

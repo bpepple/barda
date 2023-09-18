@@ -176,10 +176,10 @@ class ComicVineImporter(BaseImporter):
         if metron_id := questionary.select(
             f"What {resource.name} should be added for '{cv_entry.name}'?", choices=choices
         ).ask():
-            self.conversions.store(resource.value, cv_entry.id_, metron_id)
+            self.conversions.store(resource.value, cv_entry.id, metron_id)
             questionary.print(
                 f"Added '{cv_entry.name}' to {resource.name} conversions. "
-                f"CV: {cv_entry.id_}, Metron: {metron_id}",
+                f"CV: {cv_entry.id}, Metron: {metron_id}",
                 style=Styles.SUCCESS,
             )
         return metron_id
@@ -356,7 +356,7 @@ class ComicVineImporter(BaseImporter):
         ).ask()
 
     def _create_role_list(self, creator: CreatorEntry, cover_date: datetime.date) -> List[str]:
-        role_lst = self._handle_specal_creators(creator.id_, cover_date)
+        role_lst = self._handle_specal_creators(creator.id, cover_date)
         if len(role_lst) == 0:
             role_lst = creator.roles.split(", ")
             role_lst = self._fix_role_list(role_lst)
@@ -378,12 +378,12 @@ class ComicVineImporter(BaseImporter):
         LOGGER.debug("Entering create_credits_list()...")
         credits_lst = []
         for i in credits:
-            if self._ignore_resource(Ignore_Creators, i.id_):
+            if self._ignore_resource(Ignore_Creators, i.id):
                 continue
-            if self.ignore_creators and i.id_ in self.ignore_creators:
+            if self.ignore_creators and i.id in self.ignore_creators:
                 continue
-            person = GenericEntry(id=i.id_, name=i.name, api_detail_url="")
-            creator_id = self.conversions.get(Resources.Creator.value, i.id_)
+            person = GenericEntry(id=i.id, name=i.name, api_detail_url="")
+            creator_id = self.conversions.get(Resources.Creator.value, i.id)
             if creator_id is None:
                 creator_id = self._search_for_creator(person)
             if creator_id is None:
@@ -402,7 +402,7 @@ class ComicVineImporter(BaseImporter):
     def _create_creator(self, cv_id: int) -> int | None:
         LOGGER.debug("Entering create_creator()...")
         try:
-            cv_data = self.cv.creator(cv_id)
+            creator = self.cv.get_creator(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Creator ID: {cv_id}.",
@@ -410,24 +410,24 @@ class ComicVineImporter(BaseImporter):
             )
             return None
 
-        questionary.print(f"Let's create creator '{cv_data.name}' on Metron", style=Styles.TITLE)
+        questionary.print(f"Let's create creator '{creator.name}' on Metron", style=Styles.TITLE)
         name = (
-            cv_data.name
-            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
+            creator.name
+            if questionary.confirm(f"Is '{creator.name}' the correct name?").ask()
             else questionary.text("What should be the creator's name be?").ask()
         )
         desc = questionary.text("What should be the description for this creator?").ask()
         LOGGER.debug(f"Retrieving image for '{name}'.")
-        img = self._get_image(cv_data.image.original, ImageType.Creator)
+        img = self._get_image(creator.image.original_url, ImageType.Creator)
         LOGGER.debug(f"{name} image: {img}")
         data = {
             "name": name,
             "desc": desc,
             "image": img,
             "alias": [],
-            "cv_id": cv_data.creator_id,
-            "birth": cv_data.date_of_birth,
-            "death": cv_data.date_of_death,
+            "cv_id": creator.id,
+            "birth": creator.date_of_birth,
+            "death": creator.date_of_death,
         }
 
         try:
@@ -439,10 +439,10 @@ class ComicVineImporter(BaseImporter):
         if resp is None:
             return None
 
-        self.conversions.store(Resources.Creator.value, cv_data.creator_id, resp["id"])
+        self.conversions.store(Resources.Creator.value, creator.id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Creator.name} conversions. CV: "
-            f"{cv_data.creator_id}, Metron: {resp['id']}",
+            f"{creator.id}, Metron: {resp['id']}",
             style=Styles.SUCCESS,
         )
         LOGGER.debug("Exiting create_creator()...")
@@ -485,17 +485,17 @@ class ComicVineImporter(BaseImporter):
         if questionary.confirm(
             f"Do you want to create a creator for {creator.name} on Metron?"
         ).ask():
-            return self._create_creator(creator.id_)
+            return self._create_creator(creator.id)
         if questionary.confirm(
             "Do you want to ignore this creator during the rest of this session?"
         ).ask():
-            self.ignore_creators.append(creator.id_)
+            self.ignore_creators.append(creator.id)
         return None
 
     def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
         creator_lst = []
         for creator in creators:
-            metron_id = self.conversions.get(Resources.Creator.value, creator.id_)
+            metron_id = self.conversions.get(Resources.Creator.value, creator.id)
             if metron_id is None:
                 metron_id = self._search_for_creator(creator)
             if metron_id is None:
@@ -508,22 +508,22 @@ class ComicVineImporter(BaseImporter):
     ###############
     def _create_arc(self, cv_id: int) -> int | None:
         try:
-            cv_data = self.cv.story_arc(cv_id)
+            story = self.cv.get_story_arc(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Story Arc ID: {cv_id}.",
                 style=Styles.ERROR,
             )
             return None
-        questionary.print(f"Let's create story arc '{cv_data.name}' on Metron", style=Styles.TITLE)
+        questionary.print(f"Let's create story arc '{story.name}' on Metron", style=Styles.TITLE)
         name = (
-            cv_data.name
-            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
+            story.name
+            if questionary.confirm(f"Is '{story.name}' the correct name?").ask()
             else questionary.text("What should be the story arc name be?").ask()
         )
         desc = questionary.text("What should be the description for this story arc?").ask()
-        img = self._get_image(cv_data.image.original, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": img, "cv_id": cv_data.story_arc_id}
+        img = self._get_image(story.image.original_url, ImageType.Resource)
+        data = {"name": name, "desc": desc, "image": img, "cv_id": story.id}
 
         try:
             resp = self.barda.post_arc(data)
@@ -534,7 +534,7 @@ class ComicVineImporter(BaseImporter):
         if resp is None:
             return None
 
-        self.conversions.store(Resources.Arc.value, cv_data.story_arc_id, resp["id"])
+        self.conversions.store(Resources.Arc.value, story.id, resp["id"])
         questionary.print(f"Add '{name}' to {Resources.Arc.name} conversions", style=Styles.SUCCESS)
         return resp["id"]
 
@@ -569,14 +569,14 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(f"Do you want to create a story for {arc.name} on Metron?").ask():
-            return self._create_arc(arc.id_)
+            return self._create_arc(arc.id)
         else:
             return None
 
     def _create_arc_list(self, arcs: List[GenericEntry]) -> List[int]:
         arc_lst = []
         for arc in arcs:
-            metron_id = self.conversions.get(Resources.Arc.value, arc.id_)
+            metron_id = self.conversions.get(Resources.Arc.value, arc.id)
             if metron_id is None:
                 metron_id = self._search_for_arc(arc)
             if metron_id is None:
@@ -589,7 +589,7 @@ class ComicVineImporter(BaseImporter):
     ################
     def _create_team(self, cv_id: int) -> int | None:
         try:
-            cv_data = self.cv.team(cv_id)
+            team = self.cv.get_team(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Team ID: {cv_id}.",
@@ -597,15 +597,15 @@ class ComicVineImporter(BaseImporter):
             )
             return None
 
-        questionary.print(f"Let's create team '{cv_data.name}' on Metron", style=Styles.TITLE)
+        questionary.print(f"Let's create team '{team.name}' on Metron", style=Styles.TITLE)
         name = (
-            cv_data.name
-            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
+            team.name
+            if questionary.confirm(f"Is '{team.name}' the correct name?").ask()
             else questionary.text("What should the team name be?").ask()
         )
         desc = questionary.text("What should be the description for this team?").ask()
-        img = self._get_image(cv_data.image.original, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": img, "creators": [], "cv_id": cv_data.team_id}
+        img = self._get_image(team.image.original_url, ImageType.Resource)
+        data = {"name": name, "desc": desc, "image": img, "creators": [], "cv_id": team.id}
 
         try:
             resp = self.barda.post_team(data)
@@ -616,7 +616,7 @@ class ComicVineImporter(BaseImporter):
         if resp is None:
             return None
 
-        self.conversions.store(Resources.Team.value, cv_data.team_id, resp["id"])
+        self.conversions.store(Resources.Team.value, team.id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Team.name}  conversions", style=Styles.SUCCESS
         )
@@ -651,21 +651,21 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(f"Do you want to create a team for '{team.name}' on Metron?").ask():
-            return self._create_team(team.id_)
+            return self._create_team(team.id)
         if questionary.confirm(
             "Do you want to ignore this team during the rest of this session?"
         ).ask():
-            self.ignore_teams.append(team.id_)
+            self.ignore_teams.append(team.id)
         return None
 
     def _create_team_list(self, teams: List[GenericEntry]) -> List[int]:
         team_lst = []
         for team in teams:
-            if self._ignore_resource(Ignore_Teams, team.id_):
+            if self._ignore_resource(Ignore_Teams, team.id):
                 continue
-            if self.ignore_teams and team.id_ in self.ignore_teams:
+            if self.ignore_teams and team.id in self.ignore_teams:
                 continue
-            metron_id = self.conversions.get(Resources.Team.value, team.id_)
+            metron_id = self.conversions.get(Resources.Team.value, team.id)
             if metron_id is None:
                 metron_id = self._search_for_team(team)
             if metron_id is None:
@@ -678,7 +678,7 @@ class ComicVineImporter(BaseImporter):
     #####################
     def _create_character(self, cv_id: int) -> int | None:
         try:
-            cv_data = self.cv.character(cv_id)
+            character = self.cv.get_character(cv_id)
         except ServiceError:
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Character ID: {cv_id}.",
@@ -686,16 +686,18 @@ class ComicVineImporter(BaseImporter):
             )
             return None
 
-        questionary.print(f"Let's create character '{cv_data.name}' on Metron", style=Styles.TITLE)
+        questionary.print(
+            f"Let's create character '{character.name}' on Metron", style=Styles.TITLE
+        )
         name = (
-            cv_data.name
-            if questionary.confirm(f"Is '{cv_data.name}' the correct name?").ask()
+            character.name
+            if questionary.confirm(f"Is '{character.name}' the correct name?").ask()
             else questionary.text("What should the characters name be?").ask()
         )
         desc = questionary.text("What description do you want to have for this character?").ask()
-        img = self._get_image(cv_data.image.original, ImageType.Resource)
-        teams_lst = self._create_team_list(cv_data.teams)
-        creators_lst = self._create_creator_list(cv_data.creators)
+        img = self._get_image(character.image.original_url, ImageType.Resource)
+        teams_lst = self._create_team_list(character.teams)
+        creators_lst = self._create_creator_list(character.creators)
         data = {
             "name": name,
             "alias": [],
@@ -703,7 +705,7 @@ class ComicVineImporter(BaseImporter):
             "image": img,
             "teams": teams_lst,
             "creators": creators_lst,
-            "cv_id": cv_data.character_id,
+            "cv_id": character.id,
         }
 
         try:
@@ -715,7 +717,7 @@ class ComicVineImporter(BaseImporter):
         if resp is None:
             return None
 
-        self.conversions.store(Resources.Character.value, cv_data.character_id, resp["id"])
+        self.conversions.store(Resources.Character.value, character.id, resp["id"])
         questionary.print(
             f"Added '{name}' to {Resources.Character.name} conversions.", style=Styles.SUCCESS
         )
@@ -758,21 +760,21 @@ class ComicVineImporter(BaseImporter):
         if questionary.confirm(
             f"Do you want to create a character for '{character.name}' on Metron?"
         ).ask():
-            return self._create_character(character.id_)
+            return self._create_character(character.id)
         if questionary.confirm(
             "Do you want to ignore this character during the rest of this session?"
         ).ask():
-            self.ignore_characters.append(character.id_)
+            self.ignore_characters.append(character.id)
         return None
 
     def _create_character_list(self, characters: List[GenericEntry]) -> List[int]:
         character_lst = []
         for character in characters:
-            if self._ignore_resource(Ignore_Characters, character.id_):
+            if self._ignore_resource(Ignore_Characters, character.id):
                 continue
-            if self.ignore_characters and character.id_ in self.ignore_characters:
+            if self.ignore_characters and character.id in self.ignore_characters:
                 continue
-            metron_id = self.conversions.get(Resources.Character.value, character.id_)
+            metron_id = self.conversions.get(Resources.Character.value, character.id)
             if metron_id is None:
                 metron_id = self._search_for_character(character)
             if metron_id is None:
@@ -806,7 +808,7 @@ class ComicVineImporter(BaseImporter):
     def _what_series(self) -> VolumeEntry | None:
         series = questionary.text("What series do you want to import?").ask()
         try:
-            results = self.cv.volume_list(
+            results = self.cv.list_volumes(
                 params={
                     "filter": f"name:{series}",
                 },
@@ -861,7 +863,7 @@ class ComicVineImporter(BaseImporter):
             "year_end": year_end,
             "genres": genres,
             "associated": [],
-            "cv_id": cv_series.volume_id,
+            "cv_id": cv_series.id,
         }
 
     def _create_series(self, cv_series: VolumeEntry) -> int | None:
@@ -908,7 +910,7 @@ class ComicVineImporter(BaseImporter):
         )
         team_lst = self._create_team_list(cv_issue.teams) if self.add_characters else []
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
-        img = self._get_image(cv_issue.image.original, ImageType.Cover)
+        img = self._get_image(cv_issue.image.original_url, ImageType.Cover)
         if gcd is not None:
             upc = gcd.barcode
             price = gcd.price
@@ -935,7 +937,7 @@ class ComicVineImporter(BaseImporter):
             "characters": character_lst,
             "teams": team_lst,
             "arcs": arc_lst,
-            "cv_id": cv_issue.issue_id,
+            "cv_id": cv_issue.id,
         }
         try:
             resp = self.barda.post_issue(data)
@@ -979,8 +981,8 @@ class ComicVineImporter(BaseImporter):
     def run(self) -> None:
         if series := self._what_series():
             try:
-                i_list = self.cv.issue_list(
-                    params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"}
+                i_list = self.cv.list_issues(
+                    params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"}
                 )
             except ServiceError:
                 questionary.print(
@@ -1008,7 +1010,7 @@ class ComicVineImporter(BaseImporter):
                     continue
 
                 try:
-                    cv_issue = self.cv.issue(i.issue_id)
+                    cv_issue = self.cv.get_issue(i.id)
                 except (ServiceError, requests.JSONDecodeError):
                     questionary.print(
                         "Failed to retrieve information from Comic Vine for Issue: "
@@ -1042,7 +1044,7 @@ class ComicVineImporter(BaseImporter):
 
     def _get_series_from_cv(self, series_name: str, m_series) -> List[VolumeEntry] | None:
         try:
-            return self.cv.volume_list(
+            return self.cv.list_volumes(
                 params={
                     "filter": f"name:{series_name}",
                 },
@@ -1117,9 +1119,9 @@ class ComicVineImporter(BaseImporter):
                     case _:
                         # Retrieve Issue List from Comic Vine
                         try:
-                            cv_list = self.cv.issue_list(
+                            cv_list = self.cv.list_issues(
                                 params={
-                                    "filter": f"volume:{cv_series.volume_id}",
+                                    "filter": f"volume:{cv_series.id}",
                                     "sort": "cover_date:asc",
                                 }
                             )
@@ -1152,9 +1154,9 @@ class ComicVineImporter(BaseImporter):
                     )
                     continue
 
-                if self._patch_cvid(x.issue_id, metron_issues[idx].id):
+                if self._patch_cvid(x.id, metron_issues[idx].id):
                     questionary.print(
-                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} "
+                        f"Add CVID: {x.id} to '{metron_issues[idx].series.name} "
                         f"#{metron_issues[idx].number}'",
                         style=Styles.SUCCESS,
                     )
@@ -1189,8 +1191,8 @@ class ComicVineImporter(BaseImporter):
 
             # Retrieve Issue List from Comic Vine
             try:
-                cv_list = self.cv.issue_list(
-                    params={"filter": f"volume:{series.volume_id}", "sort": "cover_date:asc"},
+                cv_list = self.cv.list_issues(
+                    params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"},
                     max_results=1500,
                 )
             except ServiceError:
@@ -1216,9 +1218,9 @@ class ComicVineImporter(BaseImporter):
                     )
                     continue
 
-                if self._patch_cvid(x.issue_id, metron_issues[idx].id):
+                if self._patch_cvid(x.id, metron_issues[idx].id):
                     questionary.print(
-                        f"Add CVID: {x.issue_id} to '{metron_issues[idx].series.name} "
+                        f"Add CVID: {x.id} to '{metron_issues[idx].series.name} "
                         f"#{metron_issues[idx].number}'",
                         style=Styles.SUCCESS,
                     )

@@ -9,7 +9,7 @@ def remove_overview_text(txt: str) -> str:
     if not txt:
         return txt
     words = txt.split()
-    if words[0].lower() in ["overview", "overview:"]:
+    if words[0].lower() in {"overview", "overview:"}:
         return " ".join(txt.split()[1:])
     return txt
 

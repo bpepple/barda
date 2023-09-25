@@ -180,7 +180,7 @@ class GeeksImporter(BaseImporter):
 
     def _get_cover_date(self, series_id: int, store: date) -> date:
         pub_id = self._get_publisher_id(series_id)
-        if pub_id not in [2, 26, 1, 24, 12, 8, 7]:
+        if pub_id not in {2, 26, 1, 24, 12, 8, 7}:
             return date(store.year, store.month, 1)
         new_date = store + dateutil.relativedelta.relativedelta(months=2)
         return new_date.replace(day=1)

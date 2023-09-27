@@ -15,11 +15,11 @@ from barda.validators import NumberValidator
 
 @unique
 class TaskType(Enum):
-    Import_Series = auto()
-    Import_LOCG = auto()
+    CV_Import_Series = auto()
+    LOCG_Import_Issue = auto()
     Import_CVID_by_Series = auto()
     Import_CVID_by_Publisher = auto()
-    Update_Issue = auto()
+    GCD_Update_Issue = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
     Marvel_Releases = auto()
@@ -152,7 +152,7 @@ class Runner:
 
         task = self._what_task()
         match task:
-            case TaskType.Import_Series.value:
+            case TaskType.CV_Import_Series.value:
                 if self.config.cv_api_key:
                     with ComicVineImporter(self.config) as importer_obj:
                         importer_obj.run()
@@ -171,10 +171,10 @@ class Runner:
             case TaskType.Marvel_Releases.value:
                 with MarvelNewReleases(self.config) as marvel_obj:
                     marvel_obj.run()
-            case TaskType.Import_LOCG.value:
+            case TaskType.LOCG_Import_Issue.value:
                 with GeeksImporter(self.config) as locg:
                     locg.run()
-            case TaskType.Update_Issue.value:
+            case TaskType.GCD_Update_Issue.value:
                 gcd = GcdUpdate(self.config)
                 gcd.run()
             case _:

@@ -112,8 +112,7 @@ class ComicVineImporter(BaseImporter):
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
         if orig_date.day != 1:
             return datetime.date(orig_date.year, orig_date.month, 1)
-        else:
-            return orig_date
+        return orig_date
 
     @staticmethod
     def _ignore_resource(resource, cv_id: int) -> bool:
@@ -243,19 +242,18 @@ class ComicVineImporter(BaseImporter):
                 return None
             issue_count = len(issue_lst)
             idx = self._select_gcd_issue(issue_lst) if issue_count > 1 else 0
-            if idx is not None:
-                gcd_issue = issue_lst[idx]
-                return GCD_Issue(
-                    gcd_id=gcd_issue[0],  # type: ignore
-                    number=gcd_issue[1],  # type: ignore
-                    price=gcd_issue[2],  # type: ignore
-                    barcode=gcd_issue[3],  # type: ignore
-                    pages=gcd_issue[4],  # type: ignore
-                    rating=gcd_issue[5],  # type: ignore
-                    publisher=gcd_issue[6],  # type: ignore
-                )
-            else:
+            if idx is None:
                 return None
+            gcd_issue = issue_lst[idx]
+            return GCD_Issue(
+                gcd_id=gcd_issue[0],  # type: ignore
+                number=gcd_issue[1],  # type: ignore
+                price=gcd_issue[2],  # type: ignore
+                barcode=gcd_issue[3],  # type: ignore
+                pages=gcd_issue[4],  # type: ignore
+                rating=gcd_issue[5],  # type: ignore
+                publisher=gcd_issue[6],  # type: ignore
+            )
 
     @staticmethod
     def _get_gcd_stories(gcd_issue_id):
@@ -570,8 +568,7 @@ class ComicVineImporter(BaseImporter):
 
         if questionary.confirm(f"Do you want to create a story for {arc.name} on Metron?").ask():
             return self._create_arc(arc.id)
-        else:
-            return None
+        return None
 
     def _create_arc_list(self, arcs: List[GenericEntry]) -> List[int]:
         arc_lst = []
@@ -970,65 +967,63 @@ class ComicVineImporter(BaseImporter):
             gcd_query = questionary.text("What series name do you want to use to search GCD?").ask()
             if gcd_series_list := db_obj.get_series_list(gcd_query):
                 gcd_idx = self._select_gcd_series(gcd_series_list)
-                gcd_series_id = (
-                    None if gcd_idx is None or gcd_idx == "" else gcd_series_list[gcd_idx][0]
-                )
-            else:
-                questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
-                gcd_series_id = None
-        return gcd_series_id
+                return None if gcd_idx is None or gcd_idx == "" else gcd_series_list[gcd_idx][0]
+            questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
+            return None
 
     def run(self) -> None:
-        if series := self._what_series():
+        series = self._what_series()
+        if series is None:
+            questionary.print("Nothing found", style=Styles.WARNING)
+            return
+
+        try:
+            i_list = self.cv.list_issues(
+                params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"}
+            )
+        except ServiceError:
+            questionary.print(
+                f"Failed to retrieve issue list from Comic Vine for Series: {series.name}.",
+                style=Styles.ERROR,
+            )
+            return None
+
+        series_id = self._get_series_id(series)
+        if series_id is None:
+            questionary.print("Unable to get Series ID. Exiting...", style=Styles.ERROR)
+            exit(0)
+
+        gcd_series_id = self._get_gcd_series_id()
+
+        self.add_characters: bool = questionary.confirm(
+            "Do you want to add characters for this series?"
+        ).ask()
+
+        for i in i_list:
+            if i.number is not None and self.metron.issues_list(
+                params={"series_id": series_id, "number": i.number}
+            ):
+                questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
+                continue
+
             try:
-                i_list = self.cv.list_issues(
-                    params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"}
-                )
-            except ServiceError:
+                cv_issue = self.cv.get_issue(i.id)
+            except (ServiceError, requests.JSONDecodeError):
                 questionary.print(
-                    f"Failed to retrieve issue list from Comic Vine for Series: {series.name}.",
+                    "Failed to retrieve information from Comic Vine for Issue: "
+                    f"{i.volume.name} #{i.number}. Skipping...",
                     style=Styles.ERROR,
                 )
-                return None
+                continue
 
-            series_id = self._get_series_id(series)
-            if series_id is None:
-                questionary.print("Unable to get Series ID. Exiting...", style=Styles.ERROR)
-                exit(0)
-
-            gcd_series_id = self._get_gcd_series_id()
-
-            self.add_characters: bool = questionary.confirm(
-                "Do you want to add characters for this series?"
-            ).ask()
-
-            for i in i_list:
-                if i.number is not None and self.metron.issues_list(
-                    params={"series_id": series_id, "number": i.number}
-                ):
-                    questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
-                    continue
-
-                try:
-                    cv_issue = self.cv.get_issue(i.id)
-                except (ServiceError, requests.JSONDecodeError):
+            if cv_issue and cv_issue.number is not None:
+                new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)
+                if new_issue is None:
                     questionary.print(
-                        "Failed to retrieve information from Comic Vine for Issue: "
-                        f"{i.volume.name} #{i.number}. Skipping...",
-                        style=Styles.ERROR,
+                        f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
                     )
-                    continue
-
-                if cv_issue and cv_issue.number is not None:
-                    new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)
-                    if new_issue is not None:
-                        questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
-                    else:
-                        questionary.print(
-                            f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
-                        )
-        else:
-            print("Nothing found")
+                    return
+                questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
 
     def _patch_cvid(self, cv_id: int, metron_id: int) -> bool:
         data = {"cv_id": cv_id}

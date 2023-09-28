@@ -8,6 +8,7 @@ from typing import Any, List
 
 import questionary
 import requests
+from mokkari.issue import Issue as MT_Issue
 from mokkari.issue import RoleList
 from mokkari.series import SeriesList
 from mokkari.team import TeamsList
@@ -971,6 +972,31 @@ class ComicVineImporter(BaseImporter):
             questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
             return None
 
+    def _update_metron_issue(self, cv: CV_Issue, met: MT_Issue) -> bool:
+        data = {}
+        if cv.characters:
+            characters_lst = self._create_character_list(cv.characters)
+            data["characters"] = characters_lst
+        if cv.teams:
+            teams_lst = self._create_team_list(cv.teams)
+            data["teams"] = teams_lst
+        if cv.story_arcs:
+            arcs_lst = self._create_arc_list(cv.story_arcs)
+            data["arcs"] = arcs_lst
+
+        if not data:
+            return False
+
+        try:
+            self.barda.patch_issue(met.id, data)  # type: ignore
+        except ApiError:
+            questionary.print(
+                f"Failed to update Metron. Metron ID: {met}",
+                style=Styles.ERROR,
+            )
+            return False
+        return True
+
     def run(self) -> None:
         series = self._what_series()
         if series is None:
@@ -1000,12 +1026,6 @@ class ComicVineImporter(BaseImporter):
         ).ask()
 
         for i in i_list:
-            if i.number is not None and self.metron.issues_list(
-                params={"series_id": series_id, "number": i.number}
-            ):
-                questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
-                continue
-
             try:
                 cv_issue = self.cv.get_issue(i.id)
             except (ServiceError, requests.JSONDecodeError):
@@ -1015,6 +1035,30 @@ class ComicVineImporter(BaseImporter):
                     style=Styles.ERROR,
                 )
                 continue
+
+            if i.number is not None:
+                # Check to see if issue already exists on Metron
+                if m := self.metron.issues_list(
+                    params={"series_id": series_id, "number": i.number}
+                ):
+                    if not questionary.confirm(
+                        f"'{series.name} #{i.number}' already exists. "
+                        "Do you want to update resources?",
+                    ).ask():
+                        questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
+                        continue
+                    mt_issue = self.metron.issue(m[0].id)
+                    if self._update_metron_issue(cv_issue, mt_issue):
+                        questionary.print(
+                            f"Updated {mt_issue.series.name} #{mt_issue.number}.",  # type: ignore
+                            style=Styles.SUCCESS,
+                        )
+                    else:
+                        questionary.print(
+                            f"Failed to update {mt_issue.series.name} #{mt_issue.number}.",  # type: ignore # noqa: E501
+                            style=Styles.WARNING,
+                        )
+                    continue
 
             if cv_issue and cv_issue.number is not None:
                 new_issue = self._create_issue(series_id, cv_issue, gcd_series_id)

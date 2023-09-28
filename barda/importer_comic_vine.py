@@ -997,7 +997,7 @@ class ComicVineImporter(BaseImporter):
             return False
         return True
 
-    def run(self) -> None:
+    def run(self) -> None:  # sourcery skip: low-code-quality
         series = self._what_series()
         if series is None:
             questionary.print("Nothing found", style=Styles.WARNING)

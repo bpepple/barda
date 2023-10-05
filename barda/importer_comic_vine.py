@@ -984,8 +984,32 @@ class ComicVineImporter(BaseImporter):
             arcs_lst = self._create_arc_list(cv.story_arcs)
             data["arcs"] = arcs_lst
 
+        if cv.description and not met.desc:  # type: ignore
+            clean_desc = remove_overview_text(cleanup_html(cv.description, True))
+            data["desc"] = clean_desc
+
         if not data:
             return False
+
+        # if cv.creators:
+        #     credits_lst = self._create_credits_list(met.id, met.cover_date, cv.creators)  # type: ignore
+        #     for item in credits_lst:
+        #         for credit in met.credits.id:  # type: ignore
+        #             if item == credit:
+        #                 # Remove existing credit from list.
+        #                 credits_lst.remove(item)
+        #                 continue
+        #     try:
+        #         self.barda.post_credit(credits_lst)
+        #         questionary.print(
+        #             f"Added credits for '{met.series.name} #{met.number}'.",  # type: ignore
+        #             style=Styles.SUCCESS,
+        #         )
+        #     except ApiError:
+        #         questionary.print(
+        #             f"Failed to add credits for '{met.series.name} #{met.number}'",  # type: ignore
+        #             style=Styles.ERROR,
+        #         )
 
         try:
             self.barda.patch_issue(met.id, data)  # type: ignore

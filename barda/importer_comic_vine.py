@@ -47,7 +47,7 @@ class ImageType(Enum):
 
 
 @unique
-class CV_Creator(Enum):
+class CVCreator(Enum):
     Alan_Fine = 56587
     Dan_Buckley = 41596
     Joe_Quesada = 1537
@@ -296,7 +296,7 @@ class ComicVineImporter(BaseImporter):
 
     @staticmethod
     def _get_axel_alonso_role(cover_date: datetime.date) -> List[str]:
-        if cover_date >= datetime.date(2011, 4, 1) and cover_date < datetime.date(2018, 3, 1):
+        if datetime.date(2011, 4, 1) <= cover_date < datetime.date(2018, 3, 1):
             return ["editor in chief"]
         return []
 
@@ -306,25 +306,25 @@ class ComicVineImporter(BaseImporter):
 
     @staticmethod
     def _get_jim_shooter_role(cover_date: datetime.date) -> List[str]:
-        if cover_date >= datetime.date(1978, 3, 1) and cover_date < datetime.date(1987, 10, 1):
+        if datetime.date(1978, 3, 1) <= cover_date < datetime.date(1987, 10, 1):
             return ["editor in chief"]
         return []
 
-    def _handle_specal_creators(self, creator: int, cover_date: datetime.date) -> List[str]:
+    def _handle_special_creators(self, creator: int, cover_date: datetime.date) -> List[str]:
         match creator:
-            case CV_Creator.Alan_Fine.value:
+            case CVCreator.Alan_Fine.value:
                 return ["executive producer"]
-            case CV_Creator.Dan_Buckley.value:
+            case CVCreator.Dan_Buckley.value:
                 return self._get_dan_buckley_role(cover_date)
-            case CV_Creator.Joe_Quesada.value:
+            case CVCreator.Joe_Quesada.value:
                 return self._get_joe_quesada_role(cover_date)
-            case CV_Creator.CB_Cebulski.value:
+            case CVCreator.CB_Cebulski.value:
                 return self._get_cb_cebulski_role(cover_date)
-            case CV_Creator.Axel_Alonso.value:
+            case CVCreator.Axel_Alonso.value:
                 return self._get_axel_alonso_role(cover_date)
-            case CV_Creator.Jim_Shooter.value:
+            case CVCreator.Jim_Shooter.value:
                 return self._get_jim_shooter_role(cover_date)
-            case CV_Creator.Mike_Richardson.value:
+            case CVCreator.Mike_Richardson.value:
                 return ["publisher"]
             case _:
                 return []
@@ -355,7 +355,7 @@ class ComicVineImporter(BaseImporter):
         ).ask()
 
     def _create_role_list(self, creator: CreatorEntry, cover_date: datetime.date) -> List[str]:
-        role_lst = self._handle_specal_creators(creator.id, cover_date)
+        role_lst = self._handle_special_creators(creator.id, cover_date)
         if len(role_lst) == 0:
             role_lst = creator.roles.split(", ")
             role_lst = self._fix_role_list(role_lst)

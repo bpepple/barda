@@ -15,7 +15,7 @@ from barda.validators import YearValidator
 
 
 @unique
-class Metron_Genres(Enum):
+class MetronGenres(Enum):
     Adult = 1
     Crime = 13
     Espionage = 2
@@ -37,7 +37,7 @@ class BaseImporter:
     def __init__(self, config: BardaSettings) -> None:
         self.image_dir = TemporaryDirectory()
         self.barda = PostData(config.metron_user, config.metron_password)
-        self.metron: Session = api(config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}")  # type: ignore
+        self.metron: Session = api(config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}")
         self.series_type: SeriesTypeList | None = None
 
     def __enter__(self):
@@ -75,9 +75,10 @@ class BaseImporter:
     #########
     # Genre #
     #########
-    def _choose_genre(self) -> int:
+    @staticmethod
+    def _choose_genre() -> int:
         choices = []
-        for i in Metron_Genres:
+        for i in MetronGenres:
             choice = questionary.Choice(title=i.name, value=i.value)
             choices.append(choice)
         return int(questionary.select("What genre should this series be?", choices=choices).ask())

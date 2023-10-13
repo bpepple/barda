@@ -76,12 +76,12 @@ class BaseImporter:
     # Genre #
     #########
     @staticmethod
-    def _choose_genre() -> int:
+    def _choose_genre() -> list[int]:
         choices = []
         for i in MetronGenres:
             choice = questionary.Choice(title=i.name, value=i.value)
             choices.append(choice)
-        return int(questionary.select("What genre should this series be?", choices=choices).ask())
+        return questionary.checkbox("What genre should this series be?", choices=choices).ask()
 
     #############
     # Publisher #

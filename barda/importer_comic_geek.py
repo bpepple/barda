@@ -98,7 +98,7 @@ class GeeksImporter(BaseImporter):
         series_type_id = self._choose_series_type()
         year_began = self._determine_series_year_began()
         year_end = self._determine_series_year_end(series_type_id)
-        genres: List[int] = [self._choose_genre()]
+        genres = self._choose_genre()
         desc: str = questionary.text(f"Do you want to add a series summary for '{series}'?").ask()
 
         return {

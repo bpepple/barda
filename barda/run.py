@@ -19,6 +19,7 @@ class TaskType(Enum):
     LOCG_Import_Issue = auto()
     Import_CVID_by_Series = auto()
     Import_CVID_by_Publisher = auto()
+    Import_Series_CVID_by_Publisher = auto()
     GCD_Update_Issue = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
@@ -177,5 +178,9 @@ class Runner:
             case TaskType.GCD_Update_Issue.value:
                 gcd = GcdUpdate(self.config)
                 gcd.run()
+            case TaskType.Import_Series_CVID_by_Publisher.value:
+                if self.config.cv_api_key:
+                    with ComicVineImporter(self.config) as importer_obj:
+                        importer_obj.import_series_cvid_by_publisher()
             case _:
                 questionary.print("Invalid choice.", style=Styles.ERROR)

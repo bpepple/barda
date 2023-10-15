@@ -171,10 +171,10 @@ class ComicVineImporter(BaseImporter):
         return result
 
     def _confirm_resource_choice(
-        self, resource: Resources, cv_entry: GenericEntry, choices: List[questionary.Choice]
+            self, resource: Resources, cv_entry: GenericEntry, choices: List[questionary.Choice]
     ) -> int | None:
         if metron_id := questionary.select(
-            f"What {resource.name} should be added for '{cv_entry.name}'?", choices=choices
+                f"What {resource.name} should be added for '{cv_entry.name}'?", choices=choices
         ).ask():
             self.conversions.store(resource.value, cv_entry.id, metron_id)
             questionary.print(
@@ -203,8 +203,8 @@ class ComicVineImporter(BaseImporter):
             return self._select_metron_series(series_lst, series)
 
         if not questionary.confirm(
-            f"No series for '{series.name} ({series.start_year})' on Metron. "
-            "Do you want to do another search?"
+                f"No series for '{series.name} ({series.start_year})' on Metron. "
+                "Do you want to do another search?"
         ).ask():
             return None
 
@@ -372,7 +372,7 @@ class ComicVineImporter(BaseImporter):
         return roles
 
     def _create_credits_list(
-        self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
+            self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
     ) -> List:
         LOGGER.debug("Entering create_credits_list()...")
         credits_lst = []
@@ -462,7 +462,7 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(
-            f"Do want to use another name to search for '{creator.name}'?"
+                f"Do want to use another name to search for '{creator.name}'?"
         ).ask():
             txt = questionary.text(f"What name do you want to search for '{creator.name}'?").ask()
             lst = self.metron.creators_list(params={"name": txt})
@@ -470,7 +470,7 @@ class ComicVineImporter(BaseImporter):
             if new_choices is None:
                 questionary.print(f"Nothing found for '{creator.name}'", style=Styles.WARNING)
             elif metron_id := self._confirm_resource_choice(
-                Resources.Creator, creator, new_choices
+                    Resources.Creator, creator, new_choices
             ):
                 return metron_id
 
@@ -482,11 +482,11 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(
-            f"Do you want to create a creator for {creator.name} on Metron?"
+                f"Do you want to create a creator for {creator.name} on Metron?"
         ).ask():
             return self._create_creator(creator.id)
         if questionary.confirm(
-            "Do you want to ignore this creator during the rest of this session?"
+                "Do you want to ignore this creator during the rest of this session?"
         ).ask():
             self.ignore_creators.append(creator.id)
         return None
@@ -651,7 +651,7 @@ class ComicVineImporter(BaseImporter):
         if questionary.confirm(f"Do you want to create a team for '{team.name}' on Metron?").ask():
             return self._create_team(team.id)
         if questionary.confirm(
-            "Do you want to ignore this team during the rest of this session?"
+                "Do you want to ignore this team during the rest of this session?"
         ).ask():
             self.ignore_teams.append(team.id)
         return None
@@ -736,7 +736,7 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(
-            f"Do want to use another name to search for '{character.name}'?"
+                f"Do want to use another name to search for '{character.name}'?"
         ).ask():
             txt = questionary.text(f"What name do you want to search for '{character.name}'?").ask()
             lst = self.metron.characters_list(params={"name": txt})
@@ -744,7 +744,7 @@ class ComicVineImporter(BaseImporter):
             if new_choices is None:
                 questionary.print(f"Nothing found for '{txt}'", style=Styles.WARNING)
             elif metron_id := self._confirm_resource_choice(
-                Resources.Character, character, new_choices
+                    Resources.Character, character, new_choices
             ):
                 return metron_id
 
@@ -756,11 +756,11 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(
-            f"Do you want to create a character for '{character.name}' on Metron?"
+                f"Do you want to create a character for '{character.name}' on Metron?"
         ).ask():
             return self._create_character(character.id)
         if questionary.confirm(
-            "Do you want to ignore this character during the rest of this session?"
+                "Do you want to ignore this character during the rest of this session?"
         ).ask():
             self.ignore_characters.append(character.id)
         return None
@@ -1063,11 +1063,11 @@ class ComicVineImporter(BaseImporter):
             if i.number is not None:
                 # Check to see if issue already exists on Metron
                 if m := self.metron.issues_list(
-                    params={"series_id": series_id, "number": i.number}
+                        params={"series_id": series_id, "number": i.number}
                 ):
                     if not questionary.confirm(
-                        f"'{series.name} #{i.number}' already exists. "
-                        "Do you want to update resources?",
+                            f"'{series.name} #{i.number}' already exists. "
+                            "Do you want to update resources?",
                     ).ask():
                         questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
                         continue
@@ -1128,8 +1128,8 @@ class ComicVineImporter(BaseImporter):
 
         if not results:
             if not questionary.confirm(
-                f"No series for '{metron_series.display_name}' on Comic Vine. "
-                "Do you want to do another search?"
+                    f"No series for '{metron_series.display_name}' on Comic Vine. "
+                    "Do you want to do another search?"
             ).ask():
                 return None
             series_query = questionary.text(
@@ -1243,7 +1243,8 @@ class ComicVineImporter(BaseImporter):
                 continue
 
             # Retrieve Issue List from Metron
-            metron_issues = self.metron.issues_list(params={"series_id": series_id, "missing_cv_id": True})  # type: ignore  # noqa: E501
+            metron_issues = self.metron.issues_list(
+                params={"series_id": series_id, "missing_cv_id": True})  # type: ignore  # noqa: E501
             if not metron_issues:
                 questionary.print("No issues on metron need a Comic Vine ID.", style=Styles.SUCCESS)
                 continue
@@ -1294,3 +1295,35 @@ class ComicVineImporter(BaseImporter):
                         f"#{metron_issues[idx].number}'",
                         style=Styles.WARNING,
                     )
+
+    def _patch_series_cvid(self, cv_id: int, metron_id: int) -> bool:
+        data = {"cv_id": cv_id}
+        try:
+            self.barda.patch_series(metron_id, data)
+        except ApiError:
+            questionary.print(f"Failed to update Metron. Metron ID: {metron_id} CV_ID: {cv_id}", style=Styles.ERROR)
+            return False
+        return True
+
+    def import_series_cvid_by_publisher(self) -> None:
+        pub_id = self._choose_publisher()
+        series_lst = self.metron.series_list(
+            params={"publisher_id": pub_id, "missing_cv_id": True},
+        )
+        questionary.print(f"Going to start matching {len(series_lst)} series", style=Styles.SUCCESS)
+        for s in series_lst:
+            questionary.print(f"Searching for '{s.display_name}'", style=Styles.TITLE)
+            cv_series = self._get_cv_series(s, s.issue_count)
+            match cv_series:
+                case -1:
+                    questionary.print("Exiting...", style=Styles.SUCCESS)
+                    exit(0)
+                case None | "":
+                    questionary.print(f"No series found for {s.display_name} on Comic Vine. Skipping...",
+                                      style=Styles.WARNING)
+                    continue
+                case _:
+                    if self._patch_series_cvid(cv_series.id, s.id):
+                        questionary.print(f"Added CVID: {cv_series.id} to '{s.display_name}'", style=Styles.SUCCESS)
+                    else:
+                        questionary.print(f"Failed to update '{s.display_name}'", style=Styles.WARNING)

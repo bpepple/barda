@@ -118,26 +118,25 @@ class BaseImporter:
 
     @staticmethod
     def _determine_series_year_began(start_year: int | None = None) -> int:
-        if start_year is not None:
-            return (
-                start_year
-                if questionary.confirm(
-                    f"Is '{start_year}' the correct year that this series began?"
-                ).ask()
-                else int(
-                    questionary.text(
-                        "What begin year should be used for this series?",
-                        validate=YearValidator,
-                    ).ask()
-                )
-            )
-        else:
+        if start_year is None:
             return int(
                 questionary.text(
                     "No begin year found. What begin year should be used for this series?",
                     validate=YearValidator,
                 ).ask()
             )
+        return (
+            start_year
+            if questionary.confirm(
+                f"Is '{start_year}' the correct year that this series began?"
+            ).ask()
+            else int(
+                questionary.text(
+                    "What begin year should be used for this series?",
+                    validate=YearValidator,
+                ).ask()
+            )
+        )
 
     @staticmethod
     def _determine_series_year_end(series_type_id: int) -> int | None:

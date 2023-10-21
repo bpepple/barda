@@ -812,7 +812,7 @@ class ComicVineImporter(BaseImporter):
                 },
                 max_results=1500,
             )
-        except ServiceError:
+        except (ServiceError, requests.exceptions.JSONDecodeError):
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Series: {series}.",
                 style=Styles.ERROR,
@@ -1113,7 +1113,7 @@ class ComicVineImporter(BaseImporter):
                 },
                 max_results=1500,
             )
-        except ServiceError:
+        except (ServiceError, requests.exceptions.JSONDecodeError):
             questionary.print(
                 "Failed to retrieve information from Comic Vine for Series: "
                 f"{m_series.display_name}.",

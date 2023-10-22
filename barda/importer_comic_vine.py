@@ -974,10 +974,10 @@ class ComicVineImporter(BaseImporter):
 
     def _update_metron_issue(self, cv: CV_Issue, met: MT_Issue) -> bool:
         data = {}
-        if cv.characters:
+        if self.add_characters and cv.characters:
             characters_lst = self._create_character_list(cv.characters)
             data["characters"] = characters_lst
-        if cv.teams:
+        if self.add_characters and cv.teams:
             teams_lst = self._create_team_list(cv.teams)
             data["teams"] = teams_lst
         if cv.story_arcs:
@@ -988,28 +988,23 @@ class ComicVineImporter(BaseImporter):
             clean_desc = remove_overview_text(cleanup_html(cv.description, True))
             data["desc"] = clean_desc
 
+        if cv.creators and questionary.confirm("Do you want to add any missing credits?").ask():
+            credits_lst = self._create_credits_list(met.id, met.cover_date, cv.creators)  # type: ignore
+            for item in credits_lst:
+                try:
+                    self.barda.post_credit([item])
+                    questionary.print(
+                        f"Added credits for Creator #{item['creator']} in '{met.series.name} #{met.number}'.",  # type: ignore
+                        style=Styles.SUCCESS,
+                    )
+                except ApiError:
+                    questionary.print(
+                        f"Failed to add credits for '{met.series.name} #{met.number}'",  # type: ignore
+                        style=Styles.ERROR,
+                    )
+
         if not data:
             return False
-
-        # if cv.creators:
-        #     credits_lst = self._create_credits_list(met.id, met.cover_date, cv.creators)  # type: ignore
-        #     for item in credits_lst:
-        #         for credit in met.credits.id:  # type: ignore
-        #             if item == credit:
-        #                 # Remove existing credit from list.
-        #                 credits_lst.remove(item)
-        #                 continue
-        #     try:
-        #         self.barda.post_credit(credits_lst)
-        #         questionary.print(
-        #             f"Added credits for '{met.series.name} #{met.number}'.",  # type: ignore
-        #             style=Styles.SUCCESS,
-        #         )
-        #     except ApiError:
-        #         questionary.print(
-        #             f"Failed to add credits for '{met.series.name} #{met.number}'",  # type: ignore
-        #             style=Styles.ERROR,
-        #         )
 
         try:
             self.barda.patch_issue(met.id, data)  # type: ignore

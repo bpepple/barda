@@ -199,7 +199,7 @@ class ComicVineImporter(BaseImporter):
         ).ask()
 
     def _check_metron_for_series(self, series: VolumeEntry) -> str | None:
-        if series_lst := self.metron.series_list({"name": series.name.lower().lstrip("the ")}):
+        if series_lst := self.metron.series_list({"name": series.name.lower().replace("&", "").lstrip("the ")}):
             return self._select_metron_series(series_lst, series)
 
         if not questionary.confirm(
@@ -345,16 +345,16 @@ class ComicVineImporter(BaseImporter):
         return role_list
 
     @staticmethod
-    def _ask_for_role(creator: CreatorEntry, metron_roles: RoleList):
+    def _ask_for_role(creator: CreatorEntry, metron_roles: RoleList) -> list[int]:
         choices = []
         for i in metron_roles:
             choice = questionary.Choice(title=i.name, value=i.id)  # type: ignore
             choices.append(choice)
-        return questionary.select(
+        return questionary.checkbox(
             f"No role found for {creator.name}. What should it be?", choices=choices
         ).ask()
 
-    def _create_role_list(self, creator: CreatorEntry, cover_date: datetime.date) -> List[str]:
+    def _create_role_list(self, creator: CreatorEntry, cover_date: datetime.date) -> list[int]:
         role_lst = self._handle_special_creators(creator.id, cover_date)
         if len(role_lst) == 0:
             role_lst = creator.roles.split(", ")
@@ -367,7 +367,7 @@ class ComicVineImporter(BaseImporter):
             roles.extend(m_role.id for m_role in self.role_list if i.lower() == m_role.name.lower())
 
         if not roles:
-            roles.append(self._ask_for_role(creator, self.role_list))
+            roles = self._ask_for_role(creator, self.role_list)
 
         return roles
 
@@ -994,7 +994,9 @@ class ComicVineImporter(BaseImporter):
                 try:
                     self.barda.post_credit([item])
                     questionary.print(
-                        f"Added credits for Creator #{item['creator']} in '{met.series.name} #{met.number}'.",  # type: ignore
+                        f"Added credits for Creator #{item['creator']} in '{met.series.name} #{met.number}'.",
+                        # type: ignore
+
                         style=Styles.SUCCESS,
                     )
                 except ApiError:
@@ -1024,7 +1026,7 @@ class ComicVineImporter(BaseImporter):
 
         try:
             i_list = self.cv.list_issues(
-                params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"}
+                params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"}, max_results=1500
             )
         except ServiceError:
             questionary.print(
@@ -1044,6 +1046,9 @@ class ComicVineImporter(BaseImporter):
             "Do you want to add characters for this series?"
         ).ask()
 
+        update_issue: bool = questionary.confirm("Do you want to update existing issues in Metron?").ask()
+
+        questionary.print(f"Going to add {len(i_list)} issues to Metron.", style=Styles.TITLE)
         for i in i_list:
             try:
                 cv_issue = self.cv.get_issue(i.id)
@@ -1060,12 +1065,17 @@ class ComicVineImporter(BaseImporter):
                 if m := self.metron.issues_list(
                         params={"series_id": series_id, "number": i.number}
                 ):
+                    if not update_issue:
+                        questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
+                        continue
+
                     if not questionary.confirm(
                             f"'{series.name} #{i.number}' already exists. "
                             "Do you want to update resources?",
                     ).ask():
                         questionary.print(f"{series.name} #{i.number} already exists. Skipping...")
                         continue
+
                     mt_issue = self.metron.issue(m[0].id)
                     if self._update_metron_issue(cv_issue, mt_issue):
                         questionary.print(

@@ -4,6 +4,25 @@ from bs4 import BeautifulSoup
 from titlecase import titlecase
 
 
+def clean_desc(txt: str) -> str:
+    # No text, let's bail.
+    if not txt:
+        return ""
+    split_txt = txt.split("\n\n")
+    split_len = len(split_txt)
+    # If the description starts with 'Content' let's return an empty string.
+    if split_len < 2 and split_txt[0].lower().startswith("content"):
+        return ""
+    # If there are 2 or more paragraphs, check to see if the last paragraph starts with 'Content'
+    # and if so let's not join it to the return string.
+    if split_len > 1:
+        if split_txt[-1].lower().startswith("content"):
+            return "\n\n".join(split_txt[:-1]) if split_len > 2 else split_txt[0]
+        else:
+            return txt
+    return txt
+
+
 def remove_overview_text(txt: str) -> str:
     """Remove overview text from beginning of a string if present."""
     if not txt:
@@ -53,7 +72,7 @@ def fix_story_chapters(story: str) -> str:
 
 
 def cleanup_html(
-    string: str | None, remove_html_tables: bool
+        string: str | None, remove_html_tables: bool
 ) -> str:  # sourcery skip: low-code-quality
     """
     converter = html2text.HTML2Text()

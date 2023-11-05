@@ -29,6 +29,7 @@ from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import (
+    clean_desc,
     clean_search_series_title,
     cleanup_html,
     fix_story_chapters,
@@ -902,7 +903,7 @@ class ComicVineImporter(BaseImporter):
 
         LOGGER.debug(f"Stories is List: {isinstance(stories, List)}")
 
-        cleaned_desc = remove_overview_text(cleanup_html(cv_issue.description, True))
+        cleaned_desc = clean_desc(remove_overview_text(cleanup_html(cv_issue.description, True)))
         character_lst = (
             self._create_character_list(cv_issue.characters) if self.add_characters else []
         )

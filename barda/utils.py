@@ -72,7 +72,7 @@ def fix_story_chapters(story: str) -> str:
 
 
 def cleanup_html(
-        string: str | None, remove_html_tables: bool
+    string: str | None, remove_html_tables: bool
 ) -> str:  # sourcery skip: low-code-quality
     """
     converter = html2text.HTML2Text()

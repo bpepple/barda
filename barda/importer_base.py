@@ -37,7 +37,9 @@ class BaseImporter:
     def __init__(self, config: BardaSettings) -> None:
         self.image_dir = TemporaryDirectory()
         self.barda = PostData(config.metron_user, config.metron_password)
-        self.metron: Session = api(config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}")
+        self.metron: Session = api(
+            config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}"
+        )
         self.series_type: SeriesTypeList | None = None
 
     def __enter__(self):

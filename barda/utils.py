@@ -1,7 +1,21 @@
+import platform
 import re
+from os import environ
+from pathlib import Path, PurePath
 
 from bs4 import BeautifulSoup
 from titlecase import titlecase
+from xdg.BaseDirectory import save_config_path
+
+
+def get_settings_folder() -> Path:
+    """Method to determine where the users settings should be saved."""
+
+    if platform.system() != "Windows":
+        return Path(save_config_path("barda"))
+
+    windows_path = PurePath(environ["APPDATA"]).joinpath("Barda")
+    return Path(windows_path)
 
 
 def clean_desc(txt: str) -> str:

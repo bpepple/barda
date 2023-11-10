@@ -1,26 +1,16 @@
 """Class to handle project settings"""
 
 import configparser
-import platform
-from os import environ
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Optional
 
-from xdg.BaseDirectory import save_cache_path, save_config_path
+from xdg.BaseDirectory import save_cache_path
+
+from barda.utils import get_settings_folder
 
 
 class BardaSettings:
     """Class to handle project settings"""
-
-    @staticmethod
-    def get_settings_folder() -> Path:
-        """Method to determine where the users settings should be saved."""
-
-        if platform.system() != "Windows":
-            return Path(save_config_path("barda"))
-
-        windows_path = PurePath(environ["APPDATA"]).joinpath("Barda")
-        return Path(windows_path)
 
     def __init__(self, config_dir: Optional[str] = None) -> None:
         # Online service credentials
@@ -33,7 +23,7 @@ class BardaSettings:
         self.config = configparser.ConfigParser()
 
         # setting & json file locations
-        folder = Path(config_dir) if config_dir else BardaSettings.get_settings_folder()
+        folder = Path(config_dir) if config_dir else get_settings_folder()
         self.settings_file = folder / "settings.ini"
         cache_folder = Path(save_cache_path("barda"))
         self.conversions = cache_folder / "barda.db"

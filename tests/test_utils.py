@@ -1,6 +1,6 @@
 import pytest
 
-from barda.utils import clean_search_series_title, fix_story_chapters, clean_desc
+from barda.utils import clean_desc, clean_search_series_title, fix_story_chapters
 
 test_stories = [
     pytest.param("Devil in the Sand Part One", "Missing comma", "Devil in the Sand, Part One"),
@@ -33,9 +33,11 @@ def test_clean_search_series_title(title: str, reason: str, expected: str) -> No
 
 
 test_desc = [
-    pytest.param("Welcome to Riverdale\n\nContentsLead 'em", "regular bad content", "Welcome to Riverdale"),
+    pytest.param(
+        "Welcome to Riverdale\n\nContentsLead 'em", "regular bad content", "Welcome to Riverdale"
+    ),
     pytest.param("", "empty string", ""),
-    pytest.param("ContentsLead 'em", "string starting with 'content'", "")
+    pytest.param("ContentsLead 'em", "string starting with 'content'", ""),
 ]
 
 

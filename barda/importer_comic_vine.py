@@ -903,9 +903,9 @@ class ComicVineImporter(BaseImporter):
                     LOGGER.debug(f"Issue: {series_name} {year_began}#{number}")
                     if series_name is None and number is None:
                         continue
-                    result_lst.append(
-                        {"series": series_name, "year_began": year_began, "number": number}
-                    )
+                    item_dict = {"series": series_name, "year_began": year_began, "number": number}
+                    if item_dict not in result_lst:
+                        result_lst.append(item_dict)
         return result_lst
 
     @staticmethod

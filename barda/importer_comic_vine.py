@@ -9,7 +9,7 @@ from typing import Any, List
 import questionary
 import requests
 from mokkari.issue import Issue as MT_Issue
-from mokkari.issue import RoleList
+from mokkari.issue import IssuesList, RoleList
 from mokkari.series import SeriesList
 from mokkari.team import TeamsList
 from simyan.comicvine import Comicvine as CV
@@ -122,7 +122,11 @@ class ComicVineImporter(BaseImporter):
 
     def _get_image(self, url: str, img_type: ImageType) -> str:
         LOGGER.debug("Entering get_image()...")
-        receive = requests.get(url)
+        try:
+            receive = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            LOGGER.warning(f"ConnectionError: {url}")
+            return ""
         cv = Path(url)
         LOGGER.debug(f"Comic Vine image: {cv.name}")
         if not cv.suffix:
@@ -880,6 +884,62 @@ class ComicVineImporter(BaseImporter):
 
         return None if new_series is None else new_series["id"]
 
+    ############
+    # Reprints #
+    ############
+    @staticmethod
+    def get_gcd_reprints(gcd_issue_id: int) -> list[dict[str, str | int]]:
+        result_lst = []
+        with DB() as gcd_obj:
+            story_ids = gcd_obj.get_story_ids(gcd_issue_id)
+            LOGGER.debug(f"Story IDS: {story_ids}")
+            for story_id in story_ids:
+                reprints_lst = gcd_obj.get_reprints_ids(story_id[0])
+                LOGGER.debug(f"Reprint IDS: {reprints_lst}")
+                if not reprints_lst:
+                    continue
+                for item in reprints_lst:
+                    series_name, number, year_began = gcd_obj.get_reprint_issue(item[0])
+                    LOGGER.debug(f"Issue: {series_name} {year_began}#{number}")
+                    if series_name is None and number is None:
+                        continue
+                    result_lst.append(
+                        {"series": series_name, "year_began": year_began, "number": number}
+                    )
+        return result_lst
+
+    @staticmethod
+    def _create_issue_choices(item: IssuesList) -> List[questionary.Choice] | None:
+        if not item:
+            return None
+        choices: List[questionary.Choice] = []
+        for i in item:
+            choice = questionary.Choice(title=i.issue_name, value=i.id)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return choices
+
+    def get_metron_reprint(self, gcd_reprints_lst: list[dict[str, int | str]]) -> list[int]:
+        metron_reprints_lst = []
+        for item in gcd_reprints_lst:
+            item_name = f"{item['series']} ({item['year_began']}) #{item['number']}"
+            questionary.print(f"Searching for reprint issue: '{item_name}'", style=Styles.TITLE)
+            if issues_lst := self.metron.issues_list(
+                {"series_name": item["series"], "number": item["number"]}
+            ):
+                choices = self._create_issue_choices(issues_lst)
+                if choices is None:
+                    questionary.print(
+                        f"Nothing issues found for '{item_name}'", style=Styles.WARNING
+                    )
+                    continue
+                if result := questionary.select(
+                    "Which issue should be added as a reprint?", choices=choices
+                ).ask():
+                    if result not in metron_reprints_lst:
+                        metron_reprints_lst.append(result)
+        return metron_reprints_lst
+
     #########
     # Issue #
     #########
@@ -923,6 +983,13 @@ class ComicVineImporter(BaseImporter):
             pages = None
             rating = Rating.Unknown.value
 
+        gcd_reprints_lst = self.get_gcd_reprints(gcd.id) if gcd is not None else None
+        reprints_lst = (
+            self.get_metron_reprint(gcd_reprints_lst)
+            if gcd_reprints_lst and gcd_reprints_lst is not None
+            else []
+        )
+
         data = {
             "series": series_id,
             "number": cv_issue.number,
@@ -938,6 +1005,7 @@ class ComicVineImporter(BaseImporter):
             "characters": character_lst,
             "teams": team_lst,
             "arcs": arc_lst,
+            "reprints": reprints_lst,
             "cv_id": cv_issue.id,
         }
         try:

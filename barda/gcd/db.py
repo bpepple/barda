@@ -1,5 +1,8 @@
 import mysql.connector
+import questionary
 from mysql.connector.errors import DatabaseError
+
+from barda.styles import Styles
 
 
 class DB:
@@ -13,7 +16,8 @@ class DB:
     def __exit__(self, exc_type, exc_value, traceback):
         self.cursor.close()
 
-    def _get_db(self):
+    @staticmethod
+    def _get_db():
         try:
             return mysql.connector.connect(
                 host="frodo",
@@ -22,7 +26,7 @@ class DB:
                 database="gcd",
             )
         except DatabaseError as e:
-            print(f"Database Error: {e}")
+            questionary.print(f"Database Error: {e}", style=Styles.ERROR)
             exit(0)
 
     def get_series_list(self, name: str):  # sourcery skip: class-extract-method
@@ -52,3 +56,38 @@ class DB:
         q = "SELECT title from gcd_story WHERE type_id=19 AND issue_id=%s ORDER BY sequence_number;"
         self.cursor.execute(q, [issue_id])
         return self.cursor.fetchall()
+
+    def get_story_ids(self, issue_id: int) -> list[any]:
+        """Return a list of story id's for the issue."""
+        q = "SELECT id from gcd_story WHERE type_id=19 AND issue_id=%s ORDER BY id;"
+        self.cursor.execute(q, [issue_id])
+        return self.cursor.fetchall()
+
+    def get_reprints_ids(self, story_id: int) -> list[any]:
+        """Returns a list of reprint issue id's for the story."""
+        q = "SELECT DISTINCT target_issue_id FROM gcd_reprint WHERE origin_id=%s;"
+        self.cursor.execute(q, [story_id])
+        return self.cursor.fetchall()
+
+    def get_reprint_issue(self, issue_id: int) -> tuple[str | None, int | None, int | None]:
+        q = "SELECT series_id, number FROM gcd_issue WHERE id=%s;"
+        self.cursor.execute(q, [issue_id])
+        series_id, number = self.cursor.fetchone()
+        # Check that number is all digits.
+        if str(number).isdigit():
+            number = int(number)
+        else:
+            return None, None, None
+        q = "SELECT name, country_id, year_began FROM gcd_series WHERE id=%s AND country_id=225;"
+        self.cursor.execute(q, [series_id])
+        res = self.cursor.fetchone()
+        if res is None:
+            return None, None, None
+        if res[0] is None:
+            return None, None, None
+        if res[1] != 225:
+            return None, None, None
+        # Verify year_began is all digits and if not return 0
+        year_began = int(res[2]) if str(res[2]).isdigit() else 0
+
+        return str(res[0]), number, year_began

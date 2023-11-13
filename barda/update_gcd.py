@@ -184,8 +184,28 @@ class GcdUpdate:
                     if issues_lst[0].id not in metron_reprints_lst:
                         metron_reprints_lst.append(issues_lst[0].id)
                         questionary.print(f"Found match for '{item_name}'", style=Styles.SUCCESS)
+                    else:
+                        questionary.print(
+                            f"'{item_name}' is already listed as a reprint.", style=Styles.WARNING
+                        )
                     continue
 
+                # Let's see if we can find an exact match.
+                issue_match = next(
+                    (item for item in issues_lst if item.issue_name == item_name), None
+                )
+
+                if issue_match is not None:
+                    if issue_match.id not in metron_reprints_lst:
+                        metron_reprints_lst.append(issue_match.id)
+                        questionary.print(f"Found match for '{item_name}'", style=Styles.SUCCESS)
+                    else:
+                        questionary.print(
+                            f"'{item_name}' is already listed as a reprint.", style=Styles.WARNING
+                        )
+                    continue
+
+                # Ok, no exact match, let's ask the user.
                 choices = self._create_issue_choices(issues_lst)
                 if choices is None:
                     questionary.print(

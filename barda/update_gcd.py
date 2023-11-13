@@ -1,7 +1,10 @@
+from logging import getLogger
 from typing import Any, List
 
 import questionary
 from mokkari import api
+from mokkari.issue import IssueSchema, IssuesList
+from mokkari.reprint import ReprintSchema
 from mokkari.series import SeriesList
 from mokkari.session import Session
 
@@ -12,6 +15,8 @@ from barda.post_data import PostData
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import fix_story_chapters
+
+LOGGER = getLogger(__name__)
 
 
 class GcdUpdate:
@@ -72,7 +77,8 @@ class GcdUpdate:
             else:
                 return None
 
-    def _get_gcd_stories(self, gcd_issue_id: int) -> List[str]:
+    @staticmethod
+    def _get_gcd_stories(gcd_issue_id: int) -> List[str]:
         with DB() as gcd_obj:
             stories_list = gcd_obj.get_stories(gcd_issue_id)
             if not stories_list:
@@ -100,7 +106,8 @@ class GcdUpdate:
         choices.append(questionary.Choice(title="Skip", value=""))
         return choices
 
-    def _select_metron_series(self, series_lst: SeriesList, series: str):
+    @staticmethod
+    def _select_metron_series(series_lst: SeriesList, series: str):
         choices: List[questionary.Choice] = []
         for i in series_lst:
             choice = questionary.Choice(title=i.display_name, value=i.id)
@@ -115,6 +122,82 @@ class GcdUpdate:
         series = questionary.text("What Metron series do you want to update?").ask()
         if series_lst := self.metron.series_list({"name": series}):
             return self._select_metron_series(series_lst, series)
+
+    ############
+    # Reprints #
+    ############
+    @staticmethod
+    def get_gcd_reprints(gcd_issue_id: int) -> list[dict[str, str | int]]:
+        result_lst = []
+        with DB() as gcd_obj:
+            story_ids = gcd_obj.get_story_ids(gcd_issue_id)
+            LOGGER.debug(f"Story IDS: {story_ids}")
+            for story_id in story_ids:
+                reprints_lst = gcd_obj.get_reprints_ids(story_id[0])
+                LOGGER.debug(f"Story ID: {story_id} | Reprint IDS: {reprints_lst}")
+                if not reprints_lst:
+                    continue
+                for item in reprints_lst:
+                    series_name, number, year_began = gcd_obj.get_reprint_issue(item[0])
+                    LOGGER.debug(f"Issue: {series_name} {year_began} #{number}")
+                    if series_name is None and number is None:
+                        continue
+                    item_dict = {"series": series_name, "year_began": year_began, "number": number}
+                    if item_dict not in result_lst:
+                        result_lst.append(item_dict)
+        return result_lst
+
+    @staticmethod
+    def _create_issue_choices(item: IssuesList) -> List[questionary.Choice] | None:
+        if not item:
+            return None
+        choices: List[questionary.Choice] = []
+        for i in item:
+            choice = questionary.Choice(title=i.issue_name, value=i.id)
+            choices.append(choice)
+        choices.append(questionary.Choice(title="None", value=""))
+        return choices
+
+    @staticmethod
+    def _create_metron_reprint_lst(reprint_lst: list[ReprintSchema]) -> list[int]:
+        new_lst = []
+        for i in reprint_lst:
+            new_lst.append(i.id)
+        return new_lst
+
+    def get_metron_reprint(
+        self, gcd_reprints_lst: list[dict[str, int | str]], issue: IssueSchema
+    ) -> list[int]:
+        metron_reprints_lst = (
+            self._create_metron_reprint_lst(issue.reprints) if issue.reprints else []
+        )
+
+        for item in gcd_reprints_lst:
+            item_name = f"{item['series']} ({item['year_began']}) #{item['number']}"
+            questionary.print(f"Searching for reprint issue: '{item_name}'", style=Styles.TITLE)
+            if issues_lst := self.metron.issues_list(
+                {"series_name": item["series"], "number": item["number"]}
+            ):
+                # If only one result, let's check if it's match.
+                if len(issues_lst) == 1 and item_name == issues_lst[0].issue_name:
+                    # Add the issue if it's not already in the reprints list.
+                    if issues_lst[0].id not in metron_reprints_lst:
+                        metron_reprints_lst.append(issues_lst[0].id)
+                        questionary.print(f"Found match for '{item_name}'", style=Styles.SUCCESS)
+                    continue
+
+                choices = self._create_issue_choices(issues_lst)
+                if choices is None:
+                    questionary.print(
+                        f"Nothing issues found for '{item_name}'", style=Styles.WARNING
+                    )
+                    continue
+                if result := questionary.select(
+                    "Which issue should be added as a reprint?", choices=choices
+                ).ask():
+                    if result not in metron_reprints_lst:
+                        metron_reprints_lst.append(result)
+        return metron_reprints_lst
 
     ##########
     # Update #
@@ -151,6 +234,25 @@ class GcdUpdate:
             data["page"] = gcd.pages
             msg += f"\n\tPages: {gcd.pages}"
             updated = True
+
+        gcd_reprints_lst = self.get_gcd_reprints(gcd.id) if gcd is not None else None
+        reprints_lst = (
+            self.get_metron_reprint(gcd_reprints_lst, issue)
+            if gcd_reprints_lst and gcd_reprints_lst is not None
+            else []
+        )
+
+        if reprints_lst:
+            if issue.reprints:
+                original_reprints_lst = self._create_metron_reprint_lst(issue.reprints)
+                if original_reprints_lst != reprints_lst:
+                    data["reprints"] = reprints_lst
+                    msg += f"\n\tReprints: {reprints_lst}"
+                    updated = True
+            else:
+                data["reprints"] = reprints_lst
+                msg += f"\n\tReprints: {reprints_lst}"
+                updated = True
 
         if not updated:
             questionary.print(

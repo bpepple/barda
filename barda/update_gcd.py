@@ -179,7 +179,7 @@ class GcdUpdate:
                 {"series_name": item["series"], "number": item["number"]}
             ):
                 # If only one result, let's check if it's match.
-                if len(issues_lst) == 1 and item_name == issues_lst[0].issue_name:
+                if len(issues_lst) == 1 and item_name.lower() == issues_lst[0].issue_name.lower():
                     # Add the issue if it's not already in the reprints list.
                     if issues_lst[0].id not in metron_reprints_lst:
                         metron_reprints_lst.append(issues_lst[0].id)
@@ -192,7 +192,8 @@ class GcdUpdate:
 
                 # Let's see if we can find an exact match.
                 issue_match = next(
-                    (item for item in issues_lst if item.issue_name == item_name), None
+                    (item for item in issues_lst if item.issue_name.lower() == item_name.lower()),
+                    None,
                 )
 
                 if issue_match is not None:

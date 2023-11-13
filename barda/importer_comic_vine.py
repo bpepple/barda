@@ -895,12 +895,12 @@ class ComicVineImporter(BaseImporter):
             LOGGER.debug(f"Story IDS: {story_ids}")
             for story_id in story_ids:
                 reprints_lst = gcd_obj.get_reprints_ids(story_id[0])
-                LOGGER.debug(f"Reprint IDS: {reprints_lst}")
+                LOGGER.debug(f"Story ID: {story_id} | Reprint IDS: {reprints_lst}")
                 if not reprints_lst:
                     continue
                 for item in reprints_lst:
                     series_name, number, year_began = gcd_obj.get_reprint_issue(item[0])
-                    LOGGER.debug(f"Issue: {series_name} {year_began}#{number}")
+                    LOGGER.debug(f"Issue: {series_name} {year_began} #{number}")
                     if series_name is None and number is None:
                         continue
                     item_dict = {"series": series_name, "year_began": year_began, "number": number}
@@ -927,6 +927,14 @@ class ComicVineImporter(BaseImporter):
             if issues_lst := self.metron.issues_list(
                 {"series_name": item["series"], "number": item["number"]}
             ):
+                # If only one result, let's check if it's match.
+                if len(issues_lst) == 1 and item_name == issues_lst[0].issue_name:
+                    # Add the issue if it's not already in the reprints list.
+                    if issues_lst[0].id not in metron_reprints_lst:
+                        metron_reprints_lst.append(issues_lst[0].id)
+                        questionary.print(f"Found match for '{item_name}'", style=Styles.SUCCESS)
+                    continue
+
                 choices = self._create_issue_choices(issues_lst)
                 if choices is None:
                     questionary.print(

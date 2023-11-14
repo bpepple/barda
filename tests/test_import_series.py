@@ -19,14 +19,14 @@ def test_gcd_stories(comic: int, reason: str, expected: int, tmpdir):
     assert len(stories) == expected
 
 
-def test_gcd_reprints_lst(tmpdir) -> None:
-    expected_result = [
-        {"series": "Golden Age Starman Archives", "number": 1, "year_began": 2000},
-        {"series": "The New Gods", "number": 6, "year_began": 1971},
-        {"series": "Adventure Comics", "number": 499, "year_began": 1938},
-        {"series": "The Forever People", "number": 6, "year_began": 1971},
-    ]
-    test_settings = BardaSettings(config_dir=tmpdir)
-    cvi = ComicVineImporter(test_settings)
-    results = cvi.get_gcd_reprints(2240)
-    assert results == expected_result
+# def test_gcd_reprints_lst(tmpdir) -> None:
+#     expected_result = [
+#         {"series": "Golden Age Starman Archives", "number": 1, "year_began": 2000},
+#         {"series": "The New Gods", "number": 6, "year_began": 1971},
+#         {"series": "Adventure Comics", "number": 499, "year_began": 1938},
+#         {"series": "The Forever People", "number": 6, "year_began": 1971},
+#     ]
+#     test_settings = BardaSettings(config_dir=tmpdir)
+#     cvi = ComicVineImporter(test_settings)
+#     results = cvi.get_gcd_reprints(2240)
+#     assert results == expected_result

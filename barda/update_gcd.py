@@ -213,7 +213,7 @@ class GcdUpdate:
 
                 # Let's see if we can find an exact match.
                 issue_match = next(
-                    (i for i in issues_lst if i.issue_name.lower() == item.lower()),
+                    (i for i in issues_lst if i.issue_name.lower() == str(item).lower()),
                     None,
                 )
 

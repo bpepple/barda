@@ -56,7 +56,7 @@ class Runner:
             ).ask()
         )
         conv = ResourceKeys(str(self.config.conversions))
-        conv.edit(resource, cv_id, metron_id)
+        conv.edit_cv(resource, cv_id, metron_id)
         questionary.print(f"Updated CV ID: {cv_id}", style=Styles.SUCCESS)
 
     def _delete_resource_key(self) -> None:
@@ -68,7 +68,7 @@ class Runner:
             ).ask()
         )
         conv = ResourceKeys(str(self.config.conversions))
-        if conv.delete(resource, cv_id):
+        if conv.delete_cv(resource, cv_id):
             questionary.print(f"Deleted CV ID: {cv_id}", style=Styles.SUCCESS)
         else:
             questionary.print(f"Failed to delete CV ID: {cv_id}", style=Styles.WARNING)

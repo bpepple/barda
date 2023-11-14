@@ -1,8 +1,23 @@
+from dataclasses import dataclass
+
 import mysql.connector
 import questionary
 from mysql.connector.errors import DatabaseError
 
 from barda.styles import Styles
+
+
+@dataclass
+class GcdReprintIssue:
+    """Object for tracking a GCD Reprint"""
+
+    id_: int
+    series: str | None = None
+    number: int | None = None
+    year_began: int | None = None
+
+    def __repr__(self):
+        return f"{self.series} ({self.year_began}) #{self.number}"
 
 
 class DB:
@@ -69,7 +84,7 @@ class DB:
         self.cursor.execute(q, [story_id])
         return self.cursor.fetchall()
 
-    def get_reprint_issue(self, issue_id: int) -> tuple[str | None, int | None, int | None]:
+    def get_reprint_issue(self, issue_id: int) -> GcdReprintIssue:
         q = "SELECT series_id, number FROM gcd_issue WHERE id=%s;"
         self.cursor.execute(q, [issue_id])
         series_id, number = self.cursor.fetchone()
@@ -77,17 +92,17 @@ class DB:
         if str(number).isdigit():
             number = int(number)
         else:
-            return None, None, None
+            return GcdReprintIssue(issue_id, None, None, None)
         q = "SELECT name, country_id, year_began FROM gcd_series WHERE id=%s AND country_id=225;"
         self.cursor.execute(q, [series_id])
         res = self.cursor.fetchone()
         if res is None:
-            return None, None, None
+            return GcdReprintIssue(issue_id, None, None, None)
         if res[0] is None:
-            return None, None, None
+            return GcdReprintIssue(issue_id, None, None, None)
         if res[1] != 225:
-            return None, None, None
+            return GcdReprintIssue(issue_id, None, None, None)
         # Verify year_began is all digits and if not return 0
         year_began = int(res[2]) if str(res[2]).isdigit() else 0
 
-        return str(res[0]), number, year_began
+        return GcdReprintIssue(issue_id, str(res[0]), number, year_began)

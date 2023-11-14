@@ -9,9 +9,10 @@ from mokkari.series import SeriesList
 from mokkari.session import Session
 
 from barda.exceptions import ApiError
-from barda.gcd.db import DB
+from barda.gcd.db import DB, GcdReprintIssue
 from barda.gcd.gcd_issue import GCD_Issue
 from barda.post_data import PostData
+from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
 from barda.styles import Styles
 from barda.utils import fix_story_chapters
@@ -23,6 +24,7 @@ class GcdUpdate:
     def __init__(self, config: BardaSettings) -> None:
         self.metron: Session = api(config.metron_user, config.metron_password)
         self.barda = PostData(config.metron_user, config.metron_password)
+        self.conversions = ResourceKeys(str(config.conversions))
 
     # GCD methods
     @staticmethod
@@ -127,7 +129,7 @@ class GcdUpdate:
     # Reprints #
     ############
     @staticmethod
-    def get_gcd_reprints(gcd_issue_id: int) -> list[dict[str, str | int]]:
+    def get_gcd_reprints(gcd_issue_id: int) -> list[GcdReprintIssue]:
         result_lst = []
         with DB() as gcd_obj:
             story_ids = gcd_obj.get_story_ids(gcd_issue_id)
@@ -138,13 +140,12 @@ class GcdUpdate:
                 if not reprints_lst:
                     continue
                 for item in reprints_lst:
-                    series_name, number, year_began = gcd_obj.get_reprint_issue(item[0])
-                    LOGGER.debug(f"Issue: {series_name} {year_began} #{number}")
-                    if series_name is None and number is None:
+                    gcd_reprint = gcd_obj.get_reprint_issue(item[0])
+                    LOGGER.debug(f"Issue: {gcd_reprint}")
+                    if gcd_reprint.series is None and gcd_reprint.number is None:
                         continue
-                    item_dict = {"series": series_name, "year_began": year_began, "number": number}
-                    if item_dict not in result_lst:
-                        result_lst.append(item_dict)
+                    if gcd_reprint not in result_lst:
+                        result_lst.append(gcd_reprint)
         return result_lst
 
     @staticmethod
@@ -166,52 +167,77 @@ class GcdUpdate:
         return new_lst
 
     def get_metron_reprint(
-        self, gcd_reprints_lst: list[dict[str, int | str]], issue: IssueSchema
+        self, gcd_reprints_lst: list[GcdReprintIssue], issue: IssueSchema
     ) -> list[int]:
         metron_reprints_lst = (
             self._create_metron_reprint_lst(issue.reprints) if issue.reprints else []
         )
 
         for item in gcd_reprints_lst:
-            item_name = f"{item['series']} ({item['year_began']}) #{item['number']}"
-            questionary.print(f"Searching for reprint issue: '{item_name}'", style=Styles.TITLE)
+            questionary.print(f"Searching for reprint issue: '{item}'", style=Styles.TITLE)
+            # Let's see if the reprint id is in the cache.
+            metron_issue_id = self.conversions.get_gcd(Resources.Issue.value, item.id_)
+            if metron_issue_id is not None:
+                questionary.print(f"Found {item} in cache.", style=Styles.WARNING)
+                if metron_issue_id not in metron_reprints_lst:
+                    questionary.print(f"Adding '{item}' to reprints list", style=Styles.SUCCESS)
+                    metron_reprints_lst.append(metron_issue_id)
+                else:
+                    questionary.print(
+                        f"'{item}' is already listed as a reprint", style=Styles.WARNING
+                    )
+                continue
+
             if issues_lst := self.metron.issues_list(
-                {"series_name": item["series"], "number": item["number"]}
+                {"series_name": item.series, "number": item.number}
             ):
                 # If only one result, let's check if it's match.
-                if len(issues_lst) == 1 and item_name.lower() == issues_lst[0].issue_name.lower():
+                single_issue = issues_lst[0]
+                if len(issues_lst) == 1 and str(item).lower() == single_issue.issue_name.lower():
+                    # Let's add it to the conversion cache
+                    self.conversions.store_gcd(Resources.Issue.value, item.id_, single_issue.id)
+                    questionary.print(
+                        f"Added '{item}' to {Resources.Issue.name} to cache. "
+                        f"GCD: {item.id_} | Metron: {single_issue.id}",
+                        style=Styles.SUCCESS,
+                    )
                     # Add the issue if it's not already in the reprints list.
-                    if issues_lst[0].id not in metron_reprints_lst:
-                        metron_reprints_lst.append(issues_lst[0].id)
-                        questionary.print(f"Found match for '{item_name}'", style=Styles.SUCCESS)
+                    if single_issue.id not in metron_reprints_lst:
+                        metron_reprints_lst.append(single_issue.id)
+                        questionary.print(f"Found match for '{item}'", style=Styles.SUCCESS)
                     else:
                         questionary.print(
-                            f"'{item_name}' is already listed as a reprint.", style=Styles.WARNING
+                            f"'{item}' is already listed as a reprint.", style=Styles.WARNING
                         )
                     continue
 
                 # Let's see if we can find an exact match.
                 issue_match = next(
-                    (item for item in issues_lst if item.issue_name.lower() == item_name.lower()),
+                    (i for i in issues_lst if i.issue_name.lower() == item.lower()),
                     None,
                 )
 
                 if issue_match is not None:
+                    # Let's add it to the conversion cache.
+                    self.conversions.store_gcd(Resources.Issue.value, item.id_, issue_match.id)
+                    questionary.print(
+                        f"Added '{item}' to {Resources.Issue.name} to cache. "
+                        f"GCD: {item.id_} | Metron: {issue_match.id}",
+                        style=Styles.SUCCESS,
+                    )
                     if issue_match.id not in metron_reprints_lst:
                         metron_reprints_lst.append(issue_match.id)
-                        questionary.print(f"Found match for '{item_name}'", style=Styles.SUCCESS)
+                        questionary.print(f"Found match for '{item}'", style=Styles.SUCCESS)
                     else:
                         questionary.print(
-                            f"'{item_name}' is already listed as a reprint.", style=Styles.WARNING
+                            f"'{item}' is already listed as a reprint.", style=Styles.WARNING
                         )
                     continue
 
                 # Ok, no exact match, let's ask the user.
                 choices = self._create_issue_choices(issues_lst)
                 if choices is None:
-                    questionary.print(
-                        f"Nothing issues found for '{item_name}'", style=Styles.WARNING
-                    )
+                    questionary.print(f"Nothing issues found for '{item}'", style=Styles.WARNING)
                     continue
                 if result := questionary.select(
                     "Which issue should be added as a reprint?", choices=choices

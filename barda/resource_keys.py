@@ -16,6 +16,7 @@ class Resources(Enum):
     Team = 1
     Arc = 2
     Creator = 3
+    Issue = 4
 
 
 class ResourceKeys:
@@ -31,8 +32,35 @@ class ResourceKeys:
         self.con = sqlite3.connect(db_name)
         self.cur = self.con.cursor()
         self.cur.execute("CREATE TABLE IF NOT EXISTS conversions (resource, cv, metron)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS gcddb (resource, gcd, metron)")
 
-    def get(self, resource: int, cv: int) -> Any | None:
+    def get_gcd(self, resource: int, gcd: int) -> Any | None:
+        """
+        Retrieve Metron Resource ID from a GCD ID.
+
+        Args:
+            resource (int): The Resource enum value.
+            gcd (int): The GCD ID to search for.
+        """
+        self.cur.execute("SELECT metron from gcddb WHERE resource = ? AND gcd = ?", (resource, gcd))
+        return result[0] if (result := self.cur.fetchone()) else None
+
+    def store_gcd(self, resource: int, gcd: int, metron: int) -> None:
+        """
+        Save the Resource Conversion ID's for GCD.
+
+        Args:
+            resource (int): The Resource enum value.
+            gcd (int): The GCD ID.
+            metron (int): The Metron ID.
+        """
+        self.cur.execute(
+            "INSERT INTO gcddb(resource, gcd, metron) VALUES(?,?,?)",
+            (resource, gcd, metron),
+        )
+        self.con.commit()
+
+    def get_cv(self, resource: int, cv: int) -> Any | None:
         """
         Retrieve Metron Resource ID.
 
@@ -45,7 +73,7 @@ class ResourceKeys:
         )
         return result[0] if (result := self.cur.fetchone()) else None
 
-    def store(self, resource: int, cv: int, metron: int) -> None:
+    def store_cv(self, resource: int, cv: int, metron: int) -> None:
         """
         Save the Resource Conversion ID's.
 
@@ -60,7 +88,7 @@ class ResourceKeys:
         )
         self.con.commit()
 
-    def edit(self, resource: int, cv: int, metron: int) -> None:
+    def edit_cv(self, resource: int, cv: int, metron: int) -> None:
         """
         Update the Resource Conversion ID's.
 
@@ -75,7 +103,7 @@ class ResourceKeys:
         )
         self.con.commit()
 
-    def delete(self, resource: int, cv: int) -> bool:
+    def delete_cv(self, resource: int, cv: int) -> bool:
         """
         Delete a Comic Vine Resource key.
 
@@ -85,4 +113,4 @@ class ResourceKeys:
         """
         self.cur.execute("DELETE FROM conversions WHERE resource = ? and cv = ?", (resource, cv))
         self.con.commit()
-        return self.get(resource, cv) is None
+        return self.get_cv(resource, cv) is None

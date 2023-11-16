@@ -921,7 +921,10 @@ class ComicVineImporter(BaseImporter):
     def get_metron_reprint(self, gcd_reprints_lst: list[GcdReprintIssue]) -> list[int]:
         metron_reprints_lst = []
         for item in gcd_reprints_lst:
-            questionary.print(f"Searching for reprint issue: '{item}'", style=Styles.TITLE)
+            questionary.print(
+                f"Searching for reprint issue: '{item}' {' (Collection)' if item.collection else ''}",
+                style=Styles.TITLE,
+            )
             # Let's see if the reprint id is in the cache.
             metron_issue_id = self.conversions.get_gcd(Resources.Issue.value, item.id_)
             if metron_issue_id is not None:

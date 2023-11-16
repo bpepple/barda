@@ -15,6 +15,7 @@ class GcdReprintIssue:
     series: str | None = None
     number: int | None = None
     year_began: int | None = None
+    collection: bool = False
 
     def __repr__(self):
         return f"{self.series} ({self.year_began}) #{self.number}"
@@ -93,7 +94,7 @@ class DB:
             number = int(number)
         else:
             return GcdReprintIssue(issue_id, None, None, None)
-        q = "SELECT name, country_id, year_began FROM gcd_series WHERE id=%s AND country_id=225;"
+        q = "SELECT name, country_id, year_began, publication_type_id FROM gcd_series WHERE id=%s AND country_id=225;"
         self.cursor.execute(q, [series_id])
         res = self.cursor.fetchone()
         if res is None:
@@ -104,5 +105,7 @@ class DB:
             return GcdReprintIssue(issue_id, None, None, None)
         # Verify year_began is all digits and if not return 0
         year_began = int(res[2]) if str(res[2]).isdigit() else 0
+        pub_type = res[3]
+        collection = True if pub_type is None or int(pub_type) != 1 else False
 
-        return GcdReprintIssue(issue_id, str(res[0]), number, year_began)
+        return GcdReprintIssue(issue_id, str(res[0]), number, year_began, collection)

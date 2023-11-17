@@ -33,7 +33,7 @@ class PostData:
         }
 
     @sleep_and_retry
-    @limits(calls=15, period=ONE_MINUTE)
+    @limits(calls=10, period=ONE_MINUTE)
     def _request(self, request_type: RequestAction, endpoint: List[Union[str, int]], data):
         url = self.api_url.format("/".join(str(e) for e in endpoint))
 

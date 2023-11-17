@@ -117,7 +117,12 @@ class PostData:
             LOGGER.error(f"Bad Request: data={data}")
             raise exceptions.ApiError(f"Bad request. data={data}")
 
-        resp = response.json()
+        try:
+            resp = response.json()
+        except requests.exceptions.JSONDecodeError as e:
+            LOGGER.error(f"JSONDecodeError: resp={response}")
+            raise exceptions.ApiError(f"JSON error: {repr(e)}") from e
+
         if "detail" in resp:
             LOGGER.error(f"Server Error: {resp['detail']}")
             raise exceptions.ApiError(resp["detail"])

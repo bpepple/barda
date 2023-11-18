@@ -106,6 +106,6 @@ class DB:
         # Verify year_began is all digits and if not return 0
         year_began = int(res[2]) if str(res[2]).isdigit() else 0
         pub_type = res[3]
-        collection = True if pub_type is None or int(pub_type) != 1 else False
+        collection = False if pub_type is None or int(pub_type) != 1 else True
 
         return GcdReprintIssue(issue_id, str(res[0]), number, year_began, collection)

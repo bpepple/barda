@@ -175,7 +175,9 @@ class GcdUpdate:
         )
 
         for item in gcd_reprints_lst:
-            questionary.print(f"Searching for reprint issue: '{item}'", style=Styles.TITLE)
+            questionary.print(
+                f"Searching for reprint issue: '{item}'{' (Collection)' if item.collection else ''}",
+            )
             # Let's see if the reprint id is in the cache.
             metron_issue_id = self.conversions.get_gcd(Resources.Issue.value, item.id_)
             if metron_issue_id is not None:

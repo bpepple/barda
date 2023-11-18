@@ -197,6 +197,12 @@ class GcdUpdate:
                 # If only one result, let's check if it's match.
                 single_issue = issues_lst[0]
                 if len(issues_lst) == 1 and str(item).lower() == single_issue.issue_name.lower():
+                    # Let's check that they are both collections.
+                    if item.collection and "tpb" not in single_issue.issue_name.lower():
+                        questionary.print(
+                            f"'{item}' is a collection and '{single_issue.issue_name}' is not. Skipping..."
+                        )
+                        continue
                     # Let's add it to the conversion cache
                     self.conversions.store_gcd(Resources.Issue.value, item.id_, single_issue.id)
                     questionary.print(

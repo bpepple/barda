@@ -51,7 +51,7 @@ class PostData:
         LOGGER.debug(f"request() data: {data}")
 
         session = requests.Session()
-        retry = Retry(connect=10, backoff_factor=1.5)
+        retry = Retry(connect=10, backoff_factor=4.5)
         session.mount("https://", HTTPAdapter(max_retries=retry))
         try:
             match request_type:
@@ -100,7 +100,7 @@ class PostData:
 
         try:
             session = requests.Session()
-            retry = Retry(connect=10, backoff_factor=1.5)
+            retry = Retry(connect=10, backoff_factor=4.5)
             session.mount("https://", HTTPAdapter(max_retries=retry))
             response = session.post(
                 url,

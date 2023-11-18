@@ -245,6 +245,11 @@ class GcdUpdate:
                 ).ask():
                     if result not in metron_reprints_lst:
                         metron_reprints_lst.append(result)
+                        questionary.print(
+                            f"Added '{item}' to {Resources.Issue.name} to cache. "
+                            f"GCD: {item.id_} | Metron: {single_issue.id}",
+                            style=Styles.SUCCESS,
+                        )
         return metron_reprints_lst
 
     ##########

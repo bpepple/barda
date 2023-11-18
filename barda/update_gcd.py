@@ -25,6 +25,7 @@ class GcdUpdate:
         self.metron: Session = api(config.metron_user, config.metron_password)
         self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ResourceKeys(str(config.conversions))
+        self.reprint_only: bool = False
 
     # GCD methods
     @staticmethod
@@ -257,30 +258,30 @@ class GcdUpdate:
             )
             return False
 
-        gcd_stories = self._get_gcd_stories(gcd.id) if gcd is not None else None
-
         data: dict[str, Any] = {}
         updated = False
         msg = "Changed:"
-        if gcd_stories is not None and issue.story_titles != gcd_stories:
-            data["name"] = gcd_stories
-            msg += f"\n\tStories: {gcd_stories}"
-            updated = True
+        if not self.reprint_only:
+            gcd_stories = self._get_gcd_stories(gcd.id) if gcd is not None else None
+            if gcd_stories is not None and issue.story_titles != gcd_stories:
+                data["name"] = gcd_stories
+                msg += f"\n\tStories: {gcd_stories}"
+                updated = True
 
-        if gcd.barcode is not None and issue.upc != gcd.barcode:
-            data["upc"] = gcd.barcode
-            msg += f"\n\tBarcode: {gcd.barcode}"
-            updated = True
+            if gcd.barcode is not None and issue.upc != gcd.barcode:
+                data["upc"] = gcd.barcode
+                msg += f"\n\tBarcode: {gcd.barcode}"
+                updated = True
 
-        if gcd.price is not None and issue.price != gcd.price:
-            data["price"] = gcd.price
-            msg += f"\n\tPrice: {gcd.price}"
-            updated = True
+            if gcd.price is not None and issue.price != gcd.price:
+                data["price"] = gcd.price
+                msg += f"\n\tPrice: {gcd.price}"
+                updated = True
 
-        if gcd.pages is not None and issue.page_count != gcd.pages:
-            data["page"] = gcd.pages
-            msg += f"\n\tPages: {gcd.pages}"
-            updated = True
+            if gcd.pages is not None and issue.page_count != gcd.pages:
+                data["page"] = gcd.pages
+                msg += f"\n\tPages: {gcd.pages}"
+                updated = True
 
         gcd_reprints_lst = self.get_gcd_reprints(gcd.id) if gcd is not None else None
         reprints_lst = (
@@ -328,6 +329,7 @@ class GcdUpdate:
             exit()
 
         issue_lst = self.metron.issues_list({"series_id": metron_series_id})
+        self.reprint_only = questionary.confirm("Do you want to only update the reprints?").ask()
         for i in issue_lst:
             m_issue = self.metron.issue(i.id)
             if self._update_issue(gcd_series_id, m_issue):

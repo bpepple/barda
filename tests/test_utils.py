@@ -38,9 +38,24 @@ test_desc = [
     ),
     pytest.param("", "empty string", ""),
     pytest.param("ContentsLead 'em", "string starting with 'content'", ""),
+    pytest.param(
+        (
+            "The hallmark anthology\n\nNote: Retailers had to order 20 copies total of the regular and variant "
+            "issue and they could order one signed Michael Kaluta variant.\n\nStory & Chapter TitlesBeasts of "
+            "Burden: Food RunRotten Apple"
+        ),
+        "string with 'Note'",
+        "The hallmark anthology",
+    ),
+    pytest.param(
+        "A suicidal robot.\n\nDo wap.\n\nStory & Chapter TitlesIsolationRotten Apple",
+        "string with 'Story'",
+        "A suicidal robot.\n\nDo wap.",
+    ),
 ]
 
 
 @pytest.mark.parametrize("txt, reason, expected", test_desc)
 def test_clean_desc(txt: str, reason: str, expected: str) -> None:
-    assert clean_desc(txt) == expected
+    res = clean_desc(txt)
+    assert res == expected

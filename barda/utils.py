@@ -30,8 +30,14 @@ def clean_desc(txt: str) -> str:
     # If there are 2 or more paragraphs, check to see if the last paragraph starts with 'Content'
     # and if so let's not join it to the return string.
     if split_len > 1:
-        if split_txt[-1].lower().startswith("content"):
-            return "\n\n".join(split_txt[:-1]) if split_len > 2 else split_txt[0]
+        for idx, i in enumerate(split_txt):
+            item = str(i)
+            if (
+                item.lower().startswith("content")
+                or item.lower().startswith("note")
+                or item.lower().startswith("story")
+            ):
+                return "\n\n".join(split_txt[:idx]) if split_len > 2 else split_txt[0]
         else:
             return txt
     return txt

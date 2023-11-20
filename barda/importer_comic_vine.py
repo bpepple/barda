@@ -1101,20 +1101,21 @@ class ComicVineImporter(BaseImporter):
             return None
 
     def _update_metron_issue(self, cv: CV_Issue, met: MT_Issue) -> bool:
-        data = {}
-        if self.add_characters and cv.characters:
-            characters_lst = self._create_character_list(cv.characters)
-            data["characters"] = characters_lst
-        if self.add_characters and cv.teams:
-            teams_lst = self._create_team_list(cv.teams)
-            data["teams"] = teams_lst
+        data: dict[str, Any] = {}
+        if self.add_characters:
+            if cv.characters:
+                characters_lst = self._create_character_list(cv.characters)
+                data["characters"] = characters_lst
+            if cv.teams:
+                teams_lst = self._create_team_list(cv.teams)
+                data["teams"] = teams_lst
         if cv.story_arcs:
             arcs_lst = self._create_arc_list(cv.story_arcs)
             data["arcs"] = arcs_lst
 
         if cv.description and not met.desc:  # type: ignore
-            clean_desc = remove_overview_text(cleanup_html(cv.description, True))
-            data["desc"] = clean_desc
+            desc = remove_overview_text(cleanup_html(cv.description, True))
+            data["desc"] = desc
 
         if cv.creators and questionary.confirm("Do you want to add any missing credits?").ask():
             credits_lst = self._create_credits_list(met.id, met.cover_date, cv.creators)  # type: ignore

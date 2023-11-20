@@ -52,6 +52,11 @@ test_desc = [
         "string with 'Story'",
         "A suicidal robot.\n\nDo wap.",
     ),
+    pytest.param(
+        "Hellboy is the centerpiece\n\nIn addition\n\n\nStory & Chapter Titles Hellboy",
+        "string with three new lines",
+        "Hellboy is the centerpiece\n\nIn addition",
+    ),
 ]
 
 

@@ -31,7 +31,7 @@ def clean_desc(txt: str) -> str:
     # and if so let's not join it to the return string.
     if split_len > 1:
         for idx, i in enumerate(split_txt):
-            item = str(i)
+            item = str(i).strip("\n")
             if (
                 item.lower().startswith("content")
                 or item.lower().startswith("note")

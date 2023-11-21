@@ -36,6 +36,7 @@ def clean_desc(txt: str) -> str:
                 item.lower().startswith("content")
                 or item.lower().startswith("note")
                 or item.lower().startswith("story")
+                or item.lower().startswith("chapter")
             ):
                 return "\n\n".join(split_txt[:idx]) if split_len > 2 else split_txt[0]
         else:

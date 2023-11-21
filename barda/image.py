@@ -42,7 +42,10 @@ class CVImage:
             LOGGER.debug(f"Image '{self.image.name}' mode is '{mode}'.")
             if mode in ("RGBA", "P"):
                 img = img.convert("RGB")
-                img.save(self.image)
+                try:
+                    img.save(self.image)
+                except ValueError as e:
+                    LOGGER.error(f"Failed to covert image to rgb: {e}")
         LOGGER.debug("Exiting convert_to_rbg()...")
 
     def resize_cover(self) -> None:  # sourcery skip: class-extract-method

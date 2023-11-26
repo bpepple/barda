@@ -1083,6 +1083,15 @@ class ComicVineImporter(BaseImporter):
                     f"Failed to add credits for #{resp['number']}", style=Styles.ERROR
                 )
 
+        # If we have gcd information let's save it to the cache file.
+        if gcd:
+            self.conversions.store_gcd(Resources.Issue.value, gcd.id, resp["id"])
+            questionary.print(
+                f"Added #'{resp['number']}' to {Resources.Issue.name} to cache. "
+                f"GCD: {gcd.id} | Metron: {resp['id']}",
+                style=Styles.SUCCESS,
+            )
+
         return resp
 
     def _get_series_id(self, series) -> int | None:

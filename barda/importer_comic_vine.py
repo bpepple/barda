@@ -1087,7 +1087,7 @@ class ComicVineImporter(BaseImporter):
         if gcd:
             self.conversions.store_gcd(Resources.Issue.value, gcd.id, resp["id"])
             questionary.print(
-                f"Added #'{resp['number']}' to {Resources.Issue.name} to cache. "
+                f"Added #{resp['number']} to {Resources.Issue.name} to cache. "
                 f"GCD: {gcd.id} | Metron: {resp['id']}",
                 style=Styles.SUCCESS,
             )

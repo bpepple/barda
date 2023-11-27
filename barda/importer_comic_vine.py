@@ -109,6 +109,7 @@ class ComicVineImporter(BaseImporter):
         self.ignore_characters: List[int] = []
         self.ignore_teams: List[int] = []
         self.ignore_creators: List[int] = []
+        self.missing_issue: set[int] = set()
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -921,6 +922,11 @@ class ComicVineImporter(BaseImporter):
     def get_metron_reprint(self, gcd_reprints_lst: list[GcdReprintIssue]) -> list[int]:
         metron_reprints_lst = []
         for item in gcd_reprints_lst:
+            if self.missing_issue and item.id_ in self.missing_issue:
+                questionary.print(
+                    f"Already searched for '{item}'. Skipping...", style=Styles.WARNING
+                )
+                continue
             questionary.print(
                 f"Searching for reprint issue: '{item}'{' (Collection)' if item.collection else ''}",
                 style=Styles.TITLE,
@@ -988,6 +994,7 @@ class ComicVineImporter(BaseImporter):
                 # Ok, no exact match, let's ask the user.
                 choices = self._create_issue_choices(issues_lst)
                 if choices is None:
+                    self.missing_issue.add(item.id_)
                     questionary.print(f"Nothing issues found for '{item}'", style=Styles.WARNING)
                     continue
                 if result := questionary.select(
@@ -995,6 +1002,9 @@ class ComicVineImporter(BaseImporter):
                 ).ask():
                     if result not in metron_reprints_lst:
                         metron_reprints_lst.append(result)
+            else:
+                # Nothing found let's not search for the item again.
+                self.missing_issue.add(item.id_)
         return metron_reprints_lst
 
     #########

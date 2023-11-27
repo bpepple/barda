@@ -26,6 +26,7 @@ class GcdUpdate:
         self.barda = PostData(config.metron_user, config.metron_password)
         self.conversions = ResourceKeys(str(config.conversions))
         self.reprint_only: bool = False
+        self.missing_issue: set[int] = set()
 
     # GCD methods
     @staticmethod
@@ -178,6 +179,12 @@ class GcdUpdate:
             questionary.print(
                 f"Searching for reprint issue: '{item}'{' (Collection)' if item.collection else ''}",
             )
+            # Let's check to see if we've already searched for it.
+            if self.missing_issue and item.id_ in self.missing_issue:
+                questionary.print(
+                    f"Already searched for '{item}'. Skipping...", style=Styles.WARNING
+                )
+                continue
             # Let's see if the reprint id is in the cache.
             metron_issue_id = self.conversions.get_gcd(Resources.Issue.value, item.id_)
             if metron_issue_id is not None:
@@ -246,6 +253,7 @@ class GcdUpdate:
                 # Ok, no exact match, let's ask the user.
                 choices = self._create_issue_choices(issues_lst)
                 if choices is None:
+                    self.missing_issue.add(item.id_)
                     questionary.print(f"Nothing issues found for '{item}'", style=Styles.WARNING)
                     continue
                 if result := questionary.select(
@@ -258,6 +266,10 @@ class GcdUpdate:
                             f"GCD: {item.id_} | Metron: {single_issue.id}",
                             style=Styles.SUCCESS,
                         )
+            else:
+                # Nothing found let's not search for the item again.
+                self.missing_issue.add(item.id_)
+
         return metron_reprints_lst
 
     ##########

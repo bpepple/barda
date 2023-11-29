@@ -246,13 +246,18 @@ class BaseImporter:
                 if result := questionary.select(
                     f"Which issue should be added as a reprint for '{item}'?", choices=choices
                 ).ask():
-                    if result not in metron_reprints_lst:
-                        metron_reprints_lst.append(result)
+                    if result in metron_reprints_lst:
+                        # Result is already in reprints list, let's go on to the next item
                         questionary.print(
-                            f"Added '{item}' to {Resources.Issue.name} to cache. "
-                            f"GCD: {item.id_} | Metron: {single_issue.id}",
-                            style=Styles.SUCCESS,
+                            f"'{item}' is already listed as a reprint.", style=Styles.WARNING
                         )
+                        continue
+                    metron_reprints_lst.append(result)
+                    questionary.print(
+                        f"Added '{item}' to {Resources.Issue.name} to cache. "
+                        f"GCD: {item.id_} | Metron: {single_issue.id}",
+                        style=Styles.SUCCESS,
+                    )
                 else:
                     # If user selected None, let's not search for it again.
                     self.missing_issue.add(item.id_)

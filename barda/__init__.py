@@ -1,2 +1,2 @@
 """Projects version information used in setup.py"""
-__version__ = "0.2.24"
+__version__ = "0.2.25"

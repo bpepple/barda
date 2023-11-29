@@ -240,7 +240,7 @@ class BaseImporter:
                 choices = self._create_issue_choices(issues_lst)
                 if choices is None:
                     self.missing_issue.add(item.id_)
-                    questionary.print(f"Nothing issues found for '{item}'", style=Styles.WARNING)
+                    questionary.print(f"No issues found for '{item}'", style=Styles.WARNING)
                     continue
 
                 if result := questionary.select(

@@ -151,6 +151,17 @@ class BaseImporter:
             new_lst.append(i.id)
         return new_lst
 
+    @staticmethod
+    def _check_reprints_list(
+        item: GcdReprintIssue, issue_id: int, metron_reprints_lst: list[int]
+    ) -> list[int]:
+        if issue_id in metron_reprints_lst:
+            questionary.print(f"'{item}' is already listed as a reprint.", style=Styles.WARNING)
+        else:
+            metron_reprints_lst.append(issue_id)
+            questionary.print(f"Found match for '{item}'", style=Styles.SUCCESS)
+        return metron_reprints_lst
+
     def get_metron_reprint(
         self, gcd_reprints_lst: list[GcdReprintIssue], issue: IssueSchema | None = None
     ) -> list[int]:
@@ -174,13 +185,9 @@ class BaseImporter:
             metron_issue_id = self.conversions.get_gcd(Resources.Issue.value, item.id_)
             if metron_issue_id is not None:
                 questionary.print(f"Found {item} in cache.", style=Styles.WARNING)
-                if metron_issue_id not in metron_reprints_lst:
-                    questionary.print(f"Adding '{item}' to reprints list", style=Styles.SUCCESS)
-                    metron_reprints_lst.append(metron_issue_id)
-                else:
-                    questionary.print(
-                        f"'{item}' is already listed as a reprint", style=Styles.WARNING
-                    )
+                metron_reprints_lst = self._check_reprints_list(
+                    item, metron_issue_id, metron_reprints_lst
+                )
                 continue
 
             if issues_lst := self.metron.issues_list(
@@ -204,13 +211,9 @@ class BaseImporter:
                         style=Styles.SUCCESS,
                     )
                     # Add the issue if it's not already in the reprints list.
-                    if single_issue.id not in metron_reprints_lst:
-                        metron_reprints_lst.append(single_issue.id)
-                        questionary.print(f"Found match for '{item}'", style=Styles.SUCCESS)
-                    else:
-                        questionary.print(
-                            f"'{item}' is already listed as a reprint.", style=Styles.WARNING
-                        )
+                    metron_reprints_lst = self._check_reprints_list(
+                        item, single_issue.id, metron_reprints_lst
+                    )
                     continue
 
                 # Let's see if we can find an exact match.
@@ -227,13 +230,9 @@ class BaseImporter:
                         f"GCD: {item.id_} | Metron: {issue_match.id}",
                         style=Styles.SUCCESS,
                     )
-                    if issue_match.id not in metron_reprints_lst:
-                        metron_reprints_lst.append(issue_match.id)
-                        questionary.print(f"Found match for '{item}'", style=Styles.SUCCESS)
-                    else:
-                        questionary.print(
-                            f"'{item}' is already listed as a reprint.", style=Styles.WARNING
-                        )
+                    metron_reprints_lst = self._check_reprints_list(
+                        item, issue_match.id, metron_reprints_lst
+                    )
                     continue
 
                 # Ok, no exact match, let's ask the user.

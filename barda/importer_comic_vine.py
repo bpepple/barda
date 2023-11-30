@@ -900,6 +900,7 @@ class ComicVineImporter(BaseImporter):
         else:
             # If we don't have a date, let's bail.
             questionary.print(f"{cv_issue.name} doesn't have a cover date. Exiting...")
+            LOGGER.error(f"No Cover date: {cv_issue}")
             exit(0)
         if gcd_stories is not None and len(gcd_stories) > 0:
             stories = gcd_stories

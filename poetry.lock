@@ -230,13 +230,13 @@ files = [
 
 [[package]]
 name = "comicgeeks"
-version = "0.3.2"
+version = "0.3.3"
 description = "A python client for League of Comics Geeks."
 optional = false
 python-versions = "*"
 files = [
-    {file = "comicgeeks-0.3.2-py3-none-any.whl", hash = "sha256:2867b720319cd6cf1fe0ac60e0e0e094004d458f3979fb98bd292045db3c4c9f"},
-    {file = "comicgeeks-0.3.2.tar.gz", hash = "sha256:b55d6e911f214c8d04aaee67702f67d3d65a1a3648882a5b9c3eb11b0b11877e"},
+    {file = "comicgeeks-0.3.3-py3-none-any.whl", hash = "sha256:8e1e7bda24dbf0a16102ae6c4eb3fe95d0a8bdc8298a05d612055f04b7f4c17d"},
+    {file = "comicgeeks-0.3.3.tar.gz", hash = "sha256:8d1e70cadf7fcfcb819b0287bda002ee6be94e2e829ab2da55e3c7af969a2b18"},
 ]
 
 [package.dependencies]
@@ -1301,4 +1301,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0903310b1fe70f59fe2df9b510093eebd0f87b831b38fd560177e61263751a98"
+content-hash = "84db546dbe21191bdc09f63eaef5a84b055d68a5915510d1a0aa768855938ed6"

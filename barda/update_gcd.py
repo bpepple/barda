@@ -61,7 +61,10 @@ class GcdUpdate(BaseImporter):
         with DB() as gcd_obj:
             issue_lst = gcd_obj.get_issues(gcd_series_id, issue_number)
             if not issue_lst:
-                return None
+                # Does the issue not have an issue number?
+                issue_lst = gcd_obj.get_issues(gcd_series_id, "")
+                if not issue_lst:
+                    return None
             issue_count = len(issue_lst)
             idx = self._select_gcd_issue(issue_lst) if issue_count > 1 else 0
             if idx is not None:

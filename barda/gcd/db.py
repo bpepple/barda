@@ -59,13 +59,19 @@ class DB:
         return self.cursor.fetchall()
 
     def get_issues(self, series_id: int, issue_number: str):
-        q = (
-            "SELECT id, number, price, barcode, page_count, rating, indicia_publisher_id FROM "
-            "gcd_issue WHERE series_id=%s AND number=%s"
-            "AND NOT number LIKE '%Pre-Order%' "
-            "AND variant_of_id IS NULL;"
-        )
-        self.cursor.execute(q, [series_id, issue_number])
+        params = [series_id]
+        if issue_number:
+            q = (
+                "SELECT id, number, price, barcode, page_count, rating, indicia_publisher_id FROM "
+                "gcd_issue WHERE series_id=%s AND number=%s AND variant_of_id IS NULL;"
+            )
+            params.append(issue_number)
+        else:
+            q = (
+                "SELECT id, number, price, barcode, page_count, rating, indicia_publisher_id FROM "
+                "gcd_issue WHERE series_id=%s AND variant_of_id IS NULL;"
+            )
+        self.cursor.execute(q, params)
         return self.cursor.fetchall()
 
     def get_stories(self, issue_id: int):

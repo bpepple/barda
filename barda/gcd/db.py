@@ -49,10 +49,10 @@ class DB:
         q = (
             "SELECT id, name, year_began, issue_count, publishing_format "
             "from gcd_series WHERE country_id=225 AND name=%s "
-            "AND NOT publishing_format='collected edition' "
-            "AND NOT publishing_format='Collected Series'"
-            "AND NOT publishing_format='collected editions' "
-            "AND NOT publishing_format='coloring book' "
+            # "AND NOT publishing_format='collected edition' "
+            # "AND NOT publishing_format='Collected Series'"
+            # "AND NOT publishing_format='collected editions' "
+            # "AND NOT publishing_format='coloring book' "
             "ORDER BY year_began ASC;"
         )
         self.cursor.execute(q, [name])

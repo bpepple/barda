@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, List
 
@@ -211,6 +211,14 @@ class GeeksImporter(BaseImporter):
             sku = ""
         return sku
 
+    @staticmethod
+    def _get_price(issue: Issue) -> Decimal:
+        try:
+            price = Decimal(repr(issue.price))
+        except InvalidOperation:
+            price = Decimal("0")
+        return price
+
     def _create_issue(self, issue: Issue) -> None:
         series_name = self._get_series_name(issue.cover["name"])
         series_id = self._get_series_id(series_name)
@@ -224,6 +232,7 @@ class GeeksImporter(BaseImporter):
         cover = self._get_cover(issue.cover["image"])
         character_lst = self._create_characters_list(issue.characters)
         pages = self._get_pages(issue)
+        price = self._get_price(issue)
 
         data = {
             "series": series_id,
@@ -234,7 +243,7 @@ class GeeksImporter(BaseImporter):
             "desc": issue.description.strip(),
             "upc": upc,
             "sku": sku,
-            "price": Decimal(repr(issue.price)),
+            "price": price,
             "page": pages,
             "rating": Rating.Unknown.value,
             "image": cover,

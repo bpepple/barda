@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import mysql.connector
 import questionary
-from mysql.connector.errors import DatabaseError
+from mysql.connector.errors import DatabaseError, InterfaceError
 
 from barda.styles import Styles
 
@@ -41,7 +41,7 @@ class DB:
                 passwd="123456",
                 database="gcd",
             )
-        except DatabaseError as e:
+        except (DatabaseError, InterfaceError) as e:
             questionary.print(f"Database Error: {e}", style=Styles.ERROR)
             exit(0)
 

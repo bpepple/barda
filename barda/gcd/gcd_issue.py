@@ -204,17 +204,15 @@ class GCD_Issue:
             return None
         # Ugh, found price with crap in it.
         price = price.replace(" (direct)", "")
-        price = price.strip("[")
-        price = price.strip("]")
+        price = price.strip("[").strip("]")
         p_split = re.split(r";|:", price)
         for i in p_split:
+            # Let's only save the US Price
             if i.__contains__("USD"):
-                # Needed for prices without a delimiter
-                p = i.split("USD ")
+                # Remove 'USD'
+                p = i.replace("USD", "").strip()
                 # Needed for prices with a comma instead of a period.
-                i = p[0].replace(",", ".")
-                # Remove ths USD text
-                new_price = i.strip(" USD")
+                new_price = p.replace(",", ".")
                 try:
                     return Decimal(new_price)
                 except InvalidOperation:

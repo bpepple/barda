@@ -49,7 +49,7 @@ class GcdUpdate(BaseImporter):
         return gcd_series_id
 
     @staticmethod
-    def _select_gcd_issue(issue_lst: List[Any]) -> int | None:
+    def _select_gcd_issue(issue_lst: List[Any]) -> int | str:
         choices = []
         for count, issue in enumerate(issue_lst, start=0):
             choice = questionary.Choice(title=f"#{issue[1]}", value=count)
@@ -67,7 +67,7 @@ class GcdUpdate(BaseImporter):
                     return None
             issue_count = len(issue_lst)
             idx = self._select_gcd_issue(issue_lst) if issue_count > 1 else 0
-            if idx is not None:
+            if idx:
                 gcd_issue = issue_lst[idx]
                 return GCD_Issue(
                     gcd_id=gcd_issue[0],  # type: ignore

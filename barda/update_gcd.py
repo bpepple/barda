@@ -1,3 +1,4 @@
+import logging
 from logging import getLogger
 from typing import Any, List
 
@@ -58,16 +59,21 @@ class GcdUpdate(BaseImporter):
         return questionary.select("What GCD issue number should be used?", choices=choices).ask()
 
     def _get_gcd_issue(self, gcd_series_id, issue_number: str) -> GCD_Issue | None:
+        logging.debug("Entering get_gcd_issue()")
         with DB() as gcd_obj:
+            logging.debug(f"GCD Series: {gcd_series_id} | Issue: {issue_number}")
             issue_lst = gcd_obj.get_issues(gcd_series_id, issue_number)
+            logging.debug(f"Issue_list: {issue_lst}")
             if not issue_lst:
                 # Does the issue not have an issue number?
                 issue_lst = gcd_obj.get_issues(gcd_series_id, "")
                 if not issue_lst:
                     return None
             issue_count = len(issue_lst)
+            logging.debug(f"Number of issues: {issue_count}")
             idx = self._select_gcd_issue(issue_lst) if issue_count > 1 else 0
-            if idx:
+            logging.debug(f"Issue list index: {idx}")
+            if idx != "":
                 gcd_issue = issue_lst[idx]
                 return GCD_Issue(
                     gcd_id=gcd_issue[0],  # type: ignore
@@ -131,7 +137,9 @@ class GcdUpdate(BaseImporter):
     # Update #
     ##########
     def _update_issue(self, gcd_series_id, issue) -> bool:
+        logging.debug("Entering update_issue for series")
         gcd = self._get_gcd_issue(gcd_series_id, issue.number)
+        logging.debug(f"GCD: {gcd}")
         if gcd is None:
             questionary.print(
                 f"'{issue.series.name} #{issue.number}' not found on GCD. Skipping..."

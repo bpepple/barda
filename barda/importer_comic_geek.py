@@ -220,7 +220,11 @@ class GeeksImporter(BaseImporter):
         return price
 
     def _create_issue(self, issue: Issue) -> None:
-        series_name = self._get_series_name(issue.cover["name"])
+        try:
+            series_name = self._get_series_name(issue.cover["name"])
+        except IndexError:
+            questionary.print("Missing information on LOCG. Skipping...", style=Styles.WARNING)
+            return
         series_id = self._get_series_id(series_name)
         if series_id is None:
             questionary.print(f"Failed to find: {series_name}.", style=Styles.WARNING)

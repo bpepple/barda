@@ -225,6 +225,7 @@ class GeeksImporter(BaseImporter):
         if series_id is None:
             questionary.print(f"Failed to find: {series_name}.", style=Styles.WARNING)
             return
+        issue_number = issue.number if issue.number else "1"
         store_date = self._get_store_date(issue.store_date)
         cover_date = self._get_cover_date(series_id, store_date)
         upc = self._get_upc(issue)
@@ -236,7 +237,7 @@ class GeeksImporter(BaseImporter):
 
         data = {
             "series": series_id,
-            "number": issue.number,
+            "number": issue_number,
             "name": [],
             "cover_date": cover_date,
             "store_date": store_date,
@@ -255,16 +256,16 @@ class GeeksImporter(BaseImporter):
         try:
             resp = self.barda.post_issue(data)
         except ApiError:
-            questionary.print(f"API error: {series_name} #{issue.number}", style=Styles.ERROR)
+            questionary.print(f"API error: {series_name} #{issue_number}", style=Styles.ERROR)
             return
 
         if resp is not None:
             questionary.print(
-                f"Added '{series_name} #{issue.number}' to Metron", style=Styles.SUCCESS
+                f"Added '{series_name} #{issue_number}' to Metron", style=Styles.SUCCESS
             )
         else:
             questionary.print(
-                f"Failed to add '{series_name} #{issue.number}' to Metron", style=Styles.WARNING
+                f"Failed to add '{series_name} #{issue_number}' to Metron", style=Styles.WARNING
             )
 
     def run(self) -> None:

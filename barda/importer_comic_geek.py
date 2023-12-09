@@ -26,7 +26,7 @@ class GeeksImporter(BaseImporter):
         super(GeeksImporter, self).__init__(config)
         self.locg: Comic_Geeks | None = None
 
-    def _get_cover(self, url: str) -> str:
+    def _get_cover(self, url: str, variant: bool = False) -> str:
         receive = requests.get(url)
         img = Path(url)
         ext = img.suffix.split("?")
@@ -34,12 +34,64 @@ class GeeksImporter(BaseImporter):
         img_file = Path(self.image_dir.name) / new_fn
         img_file.write_bytes(receive.content)
         cover = CVImage(img_file)
-        cover.resize_cover()
+        if not variant:
+            cover.resize_cover()
+        else:
+            cover.resize_resource()
         return str(img_file)
 
     def _setup_client(self) -> None:
         self.locg = Comic_Geeks()
         self.locg.login("bpepple", "kT4qy23sA54CzAWT9^y3")
+
+    ############
+    # Variants #
+    ############
+
+    @staticmethod
+    def _variant_name(name: str) -> str:
+        split = name.split(" ")
+        begin = None
+        for idx, item in enumerate(split):
+            if item.lower().startswith("#"):
+                begin = idx + 1
+                break
+
+        if begin is not None:
+            new_name = " ".join(split[begin:])
+            bad_name = " Card Stock"
+            if bad_name in new_name:
+                new_name = new_name.replace(bad_name, "")
+            return new_name
+
+        return name
+
+    def _get_variants(self, issue_id: int, issue: Issue) -> None:
+        for item in issue.variant_covers:
+            name = self._variant_name(item["name"])
+            if questionary.confirm(
+                f"Do you want to a variant for '{name}' to '{issue.cover['name']}'"
+            ).ask():
+                img = self._get_cover(item["image"], variant=True)
+                data = {
+                    "issue": issue_id,
+                    "image": img,
+                    "name": name,
+                    "sku": "",
+                    "upc": "",
+                }
+                try:
+                    resp = self.barda.post_variant(data)
+                except ApiError:
+                    questionary.print(
+                        f"Failed to upload variant cover. Data: {data}", style=Styles.ERROR
+                    )
+                    continue
+
+                if resp is not None:
+                    questionary.print(
+                        f"Added variant cover: {issue.cover['name']}", style=Styles.SUCCESS
+                    )
 
     ##############
     # Characters #
@@ -235,7 +287,10 @@ class GeeksImporter(BaseImporter):
         upc = self._get_upc(issue)
         sku = self._get_sku(issue)
         cover = self._get_cover(issue.cover["image"])
-        character_lst = self._create_characters_list(issue.characters)
+        if questionary.confirm("Do you want to add characters to this issue?").ask():
+            character_lst = self._create_characters_list(issue.characters)
+        else:
+            character_lst = []
         pages = self._get_pages(issue)
         price = self._get_price(issue)
 
@@ -260,17 +315,35 @@ class GeeksImporter(BaseImporter):
         try:
             resp = self.barda.post_issue(data)
         except ApiError:
-            questionary.print(f"API error: {series_name} #{issue_number}", style=Styles.ERROR)
-            return
+            resp = None
 
         if resp is not None:
             questionary.print(
                 f"Added '{series_name} #{issue_number}' to Metron", style=Styles.SUCCESS
             )
+            if issue.variant_covers:
+                if questionary.confirm("Do you want to add variant covers for this issue?").ask():
+                    self._get_variants(resp["id"], issue)
         else:
             questionary.print(
-                f"Failed to add '{series_name} #{issue_number}' to Metron", style=Styles.WARNING
+                f"'{series_name} #{issue_number}' already exists on Metron", style=Styles.WARNING
             )
+            if questionary.confirm("Do you want to add any variants to the existing issue?").ask():
+                issue_lst = self.metron.issues_list(
+                    {"series_id": series_id, "number": issue_number}
+                )
+                if not issue_lst:
+                    return
+
+                if len(issue_lst) < 2:
+                    self._get_variants(issue_lst[0].id, issue)
+                else:
+                    issue_choices = self._create_issue_choices(issue_lst)
+                    metron_issue = questionary.select(
+                        "What issue should be used?", choices=issue_choices
+                    ).ask()
+                    if metron_issue:
+                        self._get_variants(metron_issue.id, issue)
 
     def run(self) -> None:
         self._setup_client()

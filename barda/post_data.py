@@ -166,3 +166,6 @@ class PostData:
 
     def post_credit(self, data):
         return self._post_credits(["credit"], data)
+
+    def post_variant(self, data):
+        return self._request(RequestAction.Post, ["variant"], data)

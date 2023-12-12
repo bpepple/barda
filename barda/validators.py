@@ -1,3 +1,5 @@
+from datetime import date
+
 from prompt_toolkit.document import Document
 from questionary import ValidationError, Validator
 
@@ -20,3 +22,11 @@ class NumberValidator(Validator):
                 message="Value must be numeric", cursor_position=len(document.text)
             )
         return super().validate(document)
+
+
+class DateValidator(Validator):
+    def validate(self, document: Document) -> None:
+        try:
+            date.fromisoformat(document.text)
+        except ValueError as e:
+            raise ValidationError(message=f"Invalid date: {e}", cursor_position=len(document.text))

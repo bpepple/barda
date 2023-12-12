@@ -35,7 +35,7 @@ from barda.utils import (
     fix_story_chapters,
     remove_overview_text,
 )
-from barda.validators import NumberValidator
+from barda.validators import DateValidator, NumberValidator
 
 LOGGER = getLogger(__name__)
 
@@ -901,10 +901,15 @@ class ComicVineImporter(BaseImporter):
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)
         else:
-            # If we don't have a date, let's bail.
-            questionary.print(f"{cv_issue.name} doesn't have a cover date. Exiting...")
-            LOGGER.error(f"No Cover date: {cv_issue}")
-            exit(0)
+            if questionary.confirm(
+                f"'{cv_issue.number}' doesn't have a cover date. Do you want to add one?"
+            ).ask():
+                cover_date = questionary.text(
+                    "What should the cover date be?", validate=DateValidator
+                ).ask()
+            else:
+                LOGGER.error(f"No Cover date: {cv_issue}")
+                exit(0)
         if gcd_stories is not None and len(gcd_stories) > 0:
             stories = gcd_stories
         else:

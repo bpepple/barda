@@ -501,6 +501,8 @@ class ComicVineImporter(BaseImporter):
     def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
         creator_lst = []
         for creator in creators:
+            if self.ignore_creators and creator.id in self.ignore_creators:
+                continue
             metron_id = self.conversions.get_cv(Resources.Creator.value, creator.id)
             if metron_id is None:
                 metron_id = self._search_for_creator(creator)

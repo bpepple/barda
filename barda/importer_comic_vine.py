@@ -208,15 +208,6 @@ class ComicVineImporter(BaseImporter):
         ):
             if series_result := self._select_metron_series(series_lst, series):
                 return series_result
-            else:
-                # Let's see if we want to use another term to search for.
-                if questionary.confirm(
-                    "Do you want to search for the Metron series with another name?"
-                ).ask():
-                    series_query = questionary.text("What series name do you want to use?").ask()
-                    if second_series_lst := self.metron.series_list({"name": series_query}):
-                        if res := self._select_metron_series(second_series_lst, series):
-                            return res
 
         if not questionary.confirm(
             f"No series for '{series.name} ({series.start_year})' on Metron. "

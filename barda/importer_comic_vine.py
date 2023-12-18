@@ -852,6 +852,7 @@ class ComicVineImporter(BaseImporter):
         )
         publisher_id = self._choose_publisher()
         series_type_id = self._choose_series_type()
+        # collection_title = self._determine_series_collection_title()
         year_began = self._determine_series_year_began(cv_series.start_year)
         year_end = self._determine_series_year_end(series_type_id)
         genres = self._choose_genre()

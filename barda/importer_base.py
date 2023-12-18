@@ -315,3 +315,9 @@ class BaseImporter:
             if series_type_id in {11, 2}
             else None
         )
+
+    @staticmethod
+    def _determine_series_collection_title() -> bool:
+        return questionary.confirm(
+            "Should this series allow the user of the collection title field?", default=False
+        ).ask()

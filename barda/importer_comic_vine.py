@@ -1005,18 +1005,42 @@ class ComicVineImporter(BaseImporter):
             questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
             return None
 
-    def _update_metron_issue(self, cv: CV_Issue, met: MT_Issue) -> bool:
+    def _update_metron_issue(self, cv: CV_Issue, met: MT_Issue) -> bool:  # NOQA: C901
         data: dict[str, Any] = {}
         if self.add_characters:
             if cv.characters:
                 characters_lst = self._create_character_list(cv.characters)
-                data["characters"] = characters_lst
+                if met.characters:
+                    metron_lst = [item.id for item in met.characters]
+                else:
+                    metron_lst = []
+                for char in characters_lst:
+                    if char not in metron_lst:
+                        metron_lst.append(char)
+                if metron_lst:
+                    data["characters"] = metron_lst
             if cv.teams:
                 teams_lst = self._create_team_list(cv.teams)
-                data["teams"] = teams_lst
+                if met.teams:
+                    metron_lst = [item.id for item in met.teams]
+                else:
+                    metron_lst = []
+                for team in teams_lst:
+                    if team not in metron_lst:
+                        metron_lst.append(team)
+                if metron_lst:
+                    data["teams"] = teams_lst
         if cv.story_arcs:
             arcs_lst = self._create_arc_list(cv.story_arcs)
-            data["arcs"] = arcs_lst
+            if met.arcs:
+                metron_lst = [item.id for item in met.arcs]
+            else:
+                metron_lst = []
+            for arc in arcs_lst:
+                if arc not in metron_lst:
+                    metron_lst.append(arc)
+            if metron_lst:
+                data["arcs"] = metron_lst
 
         if cv.description and not met.desc:  # type: ignore
             desc = remove_overview_text(cleanup_html(cv.description, True))
@@ -1037,6 +1061,9 @@ class ComicVineImporter(BaseImporter):
                         f"Failed to add credits for '{met.series.name} #{met.number}'",  # type: ignore
                         style=Styles.ERROR,
                     )
+
+        if not met.cv_id:
+            data["cv_id"] = cv.id
 
         if not data:
             return False

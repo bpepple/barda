@@ -102,7 +102,10 @@ class CVImage:
                     wpercent = RESOURCE_WIDTH / float(w)
                     hsize = int(float(h) * float(wpercent))
                     i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
-                    i.save(self.image)
+                    try:
+                        i.save(self.image)
+                    except ValueError:
+                        return
                 case ImageShape.Wide | ImageShape.Square:
                     crop_width = int(float(h) / float(3) * float(2))
                     diff = w - crop_width
@@ -113,6 +116,9 @@ class CVImage:
                     wpercent = RESOURCE_WIDTH / float(new_w)
                     hsize = int(float(h) * float(wpercent))
                     i = i.resize((RESOURCE_WIDTH, hsize), Image.Resampling.LANCZOS)
-                    i.save(self.image)
+                    try:
+                        i.save(self.image)
+                    except ValueError:
+                        return
                 case _:
                     return

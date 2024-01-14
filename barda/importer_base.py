@@ -245,6 +245,12 @@ class BaseImporter:
                 if result := questionary.select(
                     f"Which issue should be added as a reprint for '{item}'?", choices=choices
                 ).ask():
+                    self.conversions.store_gcd(Resources.Issue.value, item.id_, result)
+                    questionary.print(
+                        f"Added '{item}' to {Resources.Issue.name} to cache. "
+                        f"GCD: {item.id_} | Metron: {result}",
+                        style=Styles.SUCCESS,
+                    )
                     if result in metron_reprints_lst:
                         # Result is already in reprints list, let's go on to the next item
                         questionary.print(
@@ -252,11 +258,6 @@ class BaseImporter:
                         )
                         continue
                     metron_reprints_lst.append(result)
-                    questionary.print(
-                        f"Added '{item}' to {Resources.Issue.name} to cache. "
-                        f"GCD: {item.id_} | Metron: {single_issue.id}",
-                        style=Styles.SUCCESS,
-                    )
                 else:
                     # If user selected None, let's not search for it again.
                     self.missing_issue.add(item.id_)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "barda"
-version = "0.3.9"
+version = "0.3.10"
 description = ""
 authors = ["Brian Pepple <bpepple@metron.cloud>"]
 license = "GPL-3.0-or-later"

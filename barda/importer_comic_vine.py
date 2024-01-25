@@ -178,7 +178,8 @@ class ComicVineImporter(BaseImporter):
         self, resource: Resources, cv_entry: GenericEntry, choices: List[questionary.Choice]
     ) -> int | None:
         if metron_id := questionary.select(
-            f"What {resource.name} should be added for '{cv_entry.name}'?", choices=choices
+            f"What {resource.name} should be added for '{cv_entry.name} ({cv_entry.id})'?",
+            choices=choices,
         ).ask():
             self.conversions.store_cv(resource.value, cv_entry.id, metron_id)
             questionary.print(
@@ -735,7 +736,7 @@ class ComicVineImporter(BaseImporter):
             return None
 
         questionary.print(
-            f"Let's do a character search on Metron for '{character.name} — {character.id}'",
+            f"Let's do a character search on Metron for '{character.name}'",
             style=Styles.TITLE,
         )
         c_list = self.metron.characters_list(params={"name": character.name})

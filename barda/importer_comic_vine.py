@@ -745,7 +745,7 @@ class ComicVineImporter(BaseImporter):
             return metron_id
 
         if questionary.confirm(
-            f"Do want to use another name to search for '{character.name}'?"
+            f"Do want to use another name to search for '{character.name} — {character.id}'?"
         ).ask():
             txt = questionary.text(f"What name do you want to search for '{character.name}'?").ask()
             lst = self.metron.characters_list(params={"name": txt})

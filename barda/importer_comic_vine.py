@@ -103,6 +103,7 @@ class ComicVineImporter(BaseImporter):
         cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
         self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
         self.add_characters = False
+        self.add_universes = False
         self.role_list: list[GenericItem] | None = None
         self.ignore_characters: List[int] = []
         self.ignore_teams: List[int] = []
@@ -612,7 +613,15 @@ class ComicVineImporter(BaseImporter):
         )
         desc = questionary.text("What should be the description for this team?").ask()
         img = self._get_image(team.image.original_url, ImageType.Resource)
-        data = {"name": name, "desc": desc, "image": img, "creators": [], "cv_id": team.id}
+        universe_lst = self._choose_universes() if self.add_universes else []
+        data = {
+            "name": name,
+            "desc": desc,
+            "image": img,
+            "creators": [],
+            "universes": universe_lst,
+            "cv_id": team.id,
+        }
 
         try:
             resp = self.barda.post_team(data)
@@ -701,10 +710,12 @@ class ComicVineImporter(BaseImporter):
             if questionary.confirm(f"Is '{character.name}' the correct name?").ask()
             else questionary.text("What should the characters name be?").ask()
         )
+
         desc = questionary.text("What description do you want to have for this character?").ask()
         img = self._get_image(character.image.original_url, ImageType.Resource)
         teams_lst = self._create_team_list(character.teams)
         creators_lst = self._create_creator_list(character.creators)
+        universe_lst = self._choose_universes() if self.add_universes else []
         data = {
             "name": name,
             "alias": [],
@@ -712,6 +723,7 @@ class ComicVineImporter(BaseImporter):
             "image": img,
             "teams": teams_lst,
             "creators": creators_lst,
+            "universes": universe_lst,
             "cv_id": character.id,
         }
 
@@ -925,6 +937,7 @@ class ComicVineImporter(BaseImporter):
         )
         team_lst = self._create_team_list(cv_issue.teams) if self.add_characters else []
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
+        universe_lst = self._choose_universes() if self.add_universes else []
         img = self._get_image(cv_issue.image.original_url, ImageType.Cover)
         if gcd is not None:
             upc = gcd.barcode
@@ -959,6 +972,7 @@ class ComicVineImporter(BaseImporter):
             "characters": character_lst,
             "teams": team_lst,
             "arcs": arc_lst,
+            "universes": universe_lst,
             "reprints": reprints_lst,
             "cv_id": cv_issue.id,
         }
@@ -1105,6 +1119,10 @@ class ComicVineImporter(BaseImporter):
 
         self.add_characters: bool = questionary.confirm(
             "Do you want to add characters for this series?"
+        ).ask()
+
+        self.add_universes: bool = questionary.confirm(
+            "Do you want to add universes for this series?"
         ).ask()
 
         update_issue: bool = questionary.confirm(

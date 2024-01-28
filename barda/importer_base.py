@@ -8,6 +8,7 @@ from mokkari import api
 from mokkari.schemas.generic import GenericItem
 from mokkari.schemas.issue import BaseIssue, Issue
 from mokkari.schemas.reprint import Reprint
+from mokkari.schemas.universe import BaseUniverse
 from mokkari.session import Session
 
 from barda import __version__
@@ -48,6 +49,7 @@ class BaseImporter:
             config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}"
         )
         self.series_type: GenericItem | None = None
+        self.universes: list[BaseUniverse] = []
         self.conversions = ResourceKeys(str(config.conversions))
         # List of GCD issues not on Metron.
         self.missing_issue: set[int] = set()
@@ -83,6 +85,18 @@ class BaseImporter:
             choice = questionary.Choice(title=s.name, value=s.id)
             choices.append(choice)
         return int(questionary.select("What type of series is this?", choices=choices).ask())
+
+    #############
+    # Universes #
+    #############
+    def _choose_universes(self) -> list[int]:
+        if not self.universes:
+            self.universes = self.metron.universes_list()
+        choices = []
+        for u in self.universes:
+            choice = questionary.Choice(title=u.name, value=u.id)
+            choices.append(choice)
+        return questionary.checkbox("What universes should be added?", choices=choices).ask()
 
     #########
     # Genre #

@@ -9,7 +9,7 @@ import questionary
 import requests
 from comicgeeks import Comic_Geeks
 from comicgeeks.Comic_Geeks import Character, Issue
-from mokkari.series import SeriesList
+from mokkari.schemas.series import BaseSeries
 
 from barda.exceptions import ApiError
 from barda.gcd.gcd_issue import Rating
@@ -180,7 +180,7 @@ class GeeksImporter(BaseImporter):
         return None if new_series is None else new_series["id"]
 
     @staticmethod
-    def _select_metron_series(series_lst: SeriesList, series):
+    def _select_metron_series(series_lst: list[BaseSeries], series):
         choices: List[questionary.Choice] = []
         for i in series_lst:
             choice = questionary.Choice(title=i.display_name, value=i.id)

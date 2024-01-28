@@ -4,7 +4,7 @@ from typing import Any, List
 
 import questionary
 from mokkari import api
-from mokkari.series import SeriesList
+from mokkari.schemas.series import BaseSeries
 from mokkari.session import Session
 
 from barda.exceptions import ApiError
@@ -119,7 +119,7 @@ class GcdUpdate(BaseImporter):
         return choices
 
     @staticmethod
-    def _select_metron_series(series_lst: SeriesList, series: str):
+    def _select_metron_series(series_lst: list[BaseSeries], series: str):
         choices: List[questionary.Choice] = []
         for i in series_lst:
             choice = questionary.Choice(

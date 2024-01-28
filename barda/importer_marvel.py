@@ -10,7 +10,6 @@ import requests
 from dateutil import relativedelta
 from esak import api, sqlite_cache
 from mokkari import api as metron
-from mokkari.series import SeriesTypeList
 
 from barda.exceptions import ApiError
 from barda.gcd.gcd_issue import Rating
@@ -145,7 +144,7 @@ class MarvelNewReleases:
     # Series Type #
     ###############
     def _choose_series_type(self):  # sourcery skip: class-extract-method
-        st_lst: SeriesTypeList = self.metron.series_type_list()
+        st_lst = self.metron.series_type_list()
         choices = []
         for s in st_lst:
             choice = questionary.Choice(title=s.name, value=s.id)

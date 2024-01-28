@@ -8,10 +8,9 @@ from typing import Any, List
 
 import questionary
 import requests
-from mokkari.issue import Issue as MT_Issue
-from mokkari.issue import RoleList
-from mokkari.series import SeriesList
-from mokkari.team import TeamsList
+from mokkari.schemas.generic import GenericItem
+from mokkari.schemas.issue import Issue as MetronIssue
+from mokkari.schemas.series import BaseSeries
 from simyan.comicvine import Comicvine as CV
 from simyan.comicvine import Issue as CV_Issue
 from simyan.comicvine import VolumeEntry
@@ -104,7 +103,7 @@ class ComicVineImporter(BaseImporter):
         cv_cache = SQLiteCache(config.cv_cache, 1) if config.cv_cache else None
         self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
         self.add_characters = False
-        self.role_list: RoleList | None = None
+        self.role_list: list[GenericItem] | None = None
         self.ignore_characters: List[int] = []
         self.ignore_teams: List[int] = []
         self.ignore_creators: List[int] = []
@@ -190,7 +189,7 @@ class ComicVineImporter(BaseImporter):
         return metron_id
 
     @staticmethod
-    def _select_metron_series(series_lst: SeriesList, series: VolumeEntry):
+    def _select_metron_series(series_lst: list[BaseSeries], series: VolumeEntry):
         choices: List[questionary.Choice] = []
         for i in series_lst:
             choice = questionary.Choice(
@@ -353,7 +352,7 @@ class ComicVineImporter(BaseImporter):
         return role_list
 
     @staticmethod
-    def _ask_for_role(creator: CreatorEntry, metron_roles: RoleList) -> list[int]:
+    def _ask_for_role(creator: CreatorEntry, metron_roles: list[GenericItem]) -> list[int]:
         choices = []
         for i in metron_roles:
             choice = questionary.Choice(title=i.name, value=i.id)  # type: ignore
@@ -635,7 +634,7 @@ class ComicVineImporter(BaseImporter):
             return None
 
         questionary.print(f"Let's do a team search on Metron for '{team.name}'", style=Styles.TITLE)
-        team_lst: TeamsList = self.metron.teams_list(params={"name": team.name})
+        team_lst = self.metron.teams_list(params={"name": team.name})
         choices = self._create_choices(team_lst)
         if choices is None:
             questionary.print(f"Nothing found for '{team.name}'", style=Styles.WARNING)
@@ -1007,7 +1006,7 @@ class ComicVineImporter(BaseImporter):
             questionary.print(f"Unable to find series '{gcd_query}' on GCD.")
             return None
 
-    def _update_metron_issue(self, cv: CV_Issue, met: MT_Issue) -> bool:  # NOQA: C901
+    def _update_metron_issue(self, cv: CV_Issue, met: MetronIssue) -> bool:  # NOQA: C901
         data: dict[str, Any] = {}
         if self.add_characters:
             if cv.characters:

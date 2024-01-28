@@ -5,10 +5,9 @@ from typing import List
 
 import questionary
 from mokkari import api
-from mokkari.issue import IssueSchema, IssuesList
-from mokkari.publisher import PublishersList
-from mokkari.reprint import ReprintSchema
-from mokkari.series import SeriesTypeList
+from mokkari.schemas.generic import GenericItem
+from mokkari.schemas.issue import BaseIssue, Issue
+from mokkari.schemas.reprint import Reprint
 from mokkari.session import Session
 
 from barda import __version__
@@ -48,7 +47,7 @@ class BaseImporter:
         self.metron: Session = api(
             config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}"
         )
-        self.series_type: SeriesTypeList | None = None
+        self.series_type: GenericItem | None = None
         self.conversions = ResourceKeys(str(config.conversions))
         # List of GCD issues not on Metron.
         self.missing_issue: set[int] = set()
@@ -100,7 +99,7 @@ class BaseImporter:
     # Publisher #
     #############
     def _choose_publisher(self) -> int:
-        pub_lst: PublishersList = self.metron.publishers_list()
+        pub_lst = self.metron.publishers_list()
         choices = []
         for p in pub_lst:
             choice = questionary.Choice(title=p.name, value=p.id)
@@ -134,7 +133,7 @@ class BaseImporter:
         return result_lst
 
     @staticmethod
-    def _create_issue_choices(item: IssuesList) -> List[questionary.Choice] | None:
+    def _create_issue_choices(item: list[BaseIssue]) -> List[questionary.Choice] | None:
         if not item:
             return None
         choices: List[questionary.Choice] = []
@@ -145,7 +144,7 @@ class BaseImporter:
         return choices
 
     @staticmethod
-    def _create_metron_reprint_lst(reprint_lst: list[ReprintSchema]) -> list[int]:
+    def _create_metron_reprint_lst(reprint_lst: list[Reprint]) -> list[int]:
         new_lst = []
         for i in reprint_lst:
             new_lst.append(i.id)
@@ -163,7 +162,7 @@ class BaseImporter:
         return metron_reprints_lst
 
     def get_metron_reprint(
-        self, gcd_reprints_lst: list[GcdReprintIssue], issue: IssueSchema | None = None
+        self, gcd_reprints_lst: list[GcdReprintIssue], issue: Issue | None = None
     ) -> list[int]:
         metron_reprints_lst = []
         if issue is not None:

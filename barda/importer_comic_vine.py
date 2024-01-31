@@ -104,6 +104,7 @@ class ComicVineImporter(BaseImporter):
         self.cv = CV(api_key=config.cv_api_key, cache=cv_cache)  # type: ignore
         self.add_characters = False
         self.add_universes = False
+        self.series_universes: list[int] = []
         self.role_list: list[GenericItem] | None = None
         self.ignore_characters: List[int] = []
         self.ignore_teams: List[int] = []
@@ -937,7 +938,7 @@ class ComicVineImporter(BaseImporter):
         )
         team_lst = self._create_team_list(cv_issue.teams) if self.add_characters else []
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
-        universe_lst = self._choose_universes() if self.add_universes else []
+        universe_lst = self.series_universes
         img = self._get_image(cv_issue.image.original_url, ImageType.Cover)
         if gcd is not None:
             upc = gcd.barcode
@@ -1124,6 +1125,9 @@ class ComicVineImporter(BaseImporter):
         self.add_universes: bool = questionary.confirm(
             "Do you want to add universes for this series?"
         ).ask()
+
+        if self.add_universes:
+            self.series_universes = self._choose_universes()
 
         update_issue: bool = questionary.confirm(
             "Do you want to update existing issues in Metron?"

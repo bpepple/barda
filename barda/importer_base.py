@@ -5,10 +5,10 @@ from typing import List
 
 import questionary
 from mokkari import api
+from mokkari.schemas.base import BaseResource
 from mokkari.schemas.generic import GenericItem
 from mokkari.schemas.issue import BaseIssue, Issue
 from mokkari.schemas.reprint import Reprint
-from mokkari.schemas.universe import BaseUniverse
 from mokkari.session import Session
 
 from barda import __version__
@@ -49,7 +49,7 @@ class BaseImporter:
             config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}"
         )
         self.series_type: GenericItem | None = None
-        self.universes: list[BaseUniverse] = []
+        self.universes: list[BaseResource] = []
         self.conversions = ResourceKeys(str(config.conversions))
         # List of GCD issues not on Metron.
         self.missing_issue: set[int] = set()

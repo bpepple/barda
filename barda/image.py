@@ -2,7 +2,7 @@ from enum import Enum, auto, unique
 from logging import getLogger
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 COVER_WIDTH = 600
 RESOURCE_WIDTH = 320
@@ -23,7 +23,11 @@ class CVImage:
         self.image = img
 
     def _determine_shape(self) -> ImageShape | None:
-        i = Image.open(self.image)
+        try:
+            i = Image.open(self.image)
+        except UnidentifiedImageError:
+            LOGGER.error("Cannot identify image: '%s'", self.image.name)
+            return None
         width, height = i.size
 
         if width == height:
@@ -49,7 +53,8 @@ class CVImage:
         LOGGER.debug("Exiting convert_to_rbg()...")
 
     def resize_cover(self) -> None:  # sourcery skip: class-extract-method
-        if self._determine_shape() is not ImageShape.Tall:
+        shape = self._determine_shape()
+        if shape is None or not ImageShape.Tall:
             # Cover needs to be cropped
             return
         self._convert_to_rgb()
@@ -68,6 +73,9 @@ class CVImage:
         left = top = 0
         self._convert_to_rgb()
         shape = self._determine_shape()
+
+        if shape is None:
+            return
 
         with Image.open(self.image) as i:
             w, h = i.size
@@ -93,6 +101,9 @@ class CVImage:
 
     def resize_resource(self) -> None:  # sourcery skip: extract-duplicate-method, extract-method
         shape = self._determine_shape()
+        if shape is None:
+            return
+
         self._convert_to_rgb()
         with Image.open(self.image) as i:
             w, h = i.size

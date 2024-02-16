@@ -411,7 +411,7 @@ class ComicVineImporter(BaseImporter):
         LOGGER.debug("Entering create_creator()...")
         try:
             creator = self.cv.get_creator(cv_id)
-        except ServiceError:
+        except (ServiceError, requests.exceptions.JSONDecodeError):
             questionary.print(
                 f"Failed to retrieve information from Comic Vine for Creator ID: {cv_id}.",
                 style=Styles.ERROR,

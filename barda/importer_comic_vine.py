@@ -979,7 +979,8 @@ class ComicVineImporter(BaseImporter):
         }
         try:
             resp = self.barda.post_issue(data)
-        except ApiError:
+        except ApiError as err:
+            questionary.print(f"Creation error: {err}")
             return None
 
         if resp is None:
@@ -1180,7 +1181,7 @@ class ComicVineImporter(BaseImporter):
                     questionary.print(
                         f"Failed to create issue #{cv_issue.number}", style=Styles.ERROR
                     )
-                    return
+                    continue
                 questionary.print(f"Added issue #{new_issue['number']}", Styles.SUCCESS)
 
     def _patch_cvid(self, cv_id: int, metron_id: int) -> bool:

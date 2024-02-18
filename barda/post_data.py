@@ -72,7 +72,7 @@ class PostData:
                         auth=(self.user, self.passwd),
                         data=data,
                     )
-        except requests.exceptions.ConnectionError as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             LOGGER.error(f"Connection error: {repr(e)}")
             raise exceptions.ApiError(f"Connection error: {repr(e)}") from e
 

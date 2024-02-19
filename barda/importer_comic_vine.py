@@ -1105,9 +1105,9 @@ class ComicVineImporter(BaseImporter):
             i_list = self.cv.list_issues(
                 params={"filter": f"volume:{series.id}", "sort": "cover_date:asc"}, max_results=1500
             )
-        except ServiceError:
+        except (ServiceError, requests.exceptions.JSONDecodeError) as err:
             questionary.print(
-                f"Failed to retrieve issue list from Comic Vine for Series: {series.name}.",
+                f"Failed to retrieve issue list from Comic Vine for Series: {series.name}. Error: {err}",
                 style=Styles.ERROR,
             )
             return None

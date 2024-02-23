@@ -1171,7 +1171,7 @@ class ComicVineImporter(BaseImporter):
                     else:
                         questionary.print(
                             f"Failed to update {mt_issue.series.name} #{mt_issue.number}.",  # type: ignore # noqa: E501
-                            style=Styles.WARNING,
+                            style=Styles.ERROR,
                         )
                     continue
 

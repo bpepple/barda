@@ -205,7 +205,7 @@ class GcdUpdate(BaseImporter):
         except ApiError:
             questionary.print(
                 f"Failed to update '{issue.series.name} #{issue.number}'. Data: {data}",
-                style=Styles.WARNING,
+                style=Styles.ERROR,
             )
             return False
 

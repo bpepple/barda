@@ -53,7 +53,7 @@ class GCD_Issue:
         MARVEL = [31, 16, 26, 78, 265, 1217, 401]
         if self.publisher in MARVEL:
             match rating.strip().casefold():
-                case "rated a":
+                case "rated e / everyone" | "all ages" | "rated e everyone" | "ages 8+":
                     return Rating.Everyone.value
                 case (  # noqa: E211
                     "rated t+"

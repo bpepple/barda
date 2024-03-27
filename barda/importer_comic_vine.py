@@ -57,44 +57,46 @@ class CVCreator(Enum):
     Mike_Richardson = 45055
 
 
-BAD_PUBLISHERS = [
-    "Editoriale Corno",
-    "Editions Héritage",
-    "Editorial Muchnik",
-    "Panini España",
-    "Del Rey",
-    "Cosplay Comics",
-    "Eternity",
-    "Takeshobo",
-    "self published",
-    "Scholastic Book Services",
-    "Victory Productions",
-    "Blackthorne",
-    "Carlsen Verlag",
-    "Hakusensha",
-    "Irodori Comics",
-    "Panini Nederland",
-    "Panini España",
-    "Panini Verlag",
-    "Panini France",
-    "Panini Comics",
-    "Thorpe & Porter",
-    "Brown Watson",
-    "Titan Books",
-    "Egmont Publishing (UK)",
-    "IPC Magazines Ltd.",
-    "Titan Comics",
-    "Atlas Publishing",
-    "Federal",
-    "Stafford Pemberton",
-    "Atlas Publications Pty. Ltd.",
-    "World Distributors",
-    "Urban Comics",
-    "Ediciones Zinco",
-    "ECC Ediciones",
-    "Murray Comics",
-    "Planeta DeAgostini",
-]
+BAD_PUBLISHERS = frozenset(
+    {
+        "Editoriale Corno",
+        "Editions Héritage",
+        "Editorial Muchnik",
+        "Panini España",
+        "Del Rey",
+        "Cosplay Comics",
+        "Eternity",
+        "Takeshobo",
+        "self published",
+        "Scholastic Book Services",
+        "Victory Productions",
+        "Blackthorne",
+        "Carlsen Verlag",
+        "Hakusensha",
+        "Irodori Comics",
+        "Panini Nederland",
+        "Panini España",
+        "Panini Verlag",
+        "Panini France",
+        "Panini Comics",
+        "Thorpe & Porter",
+        "Brown Watson",
+        "Titan Books",
+        "Egmont Publishing (UK)",
+        "IPC Magazines Ltd.",
+        "Titan Comics",
+        "Atlas Publishing",
+        "Federal",
+        "Stafford Pemberton",
+        "Atlas Publications Pty. Ltd.",
+        "World Distributors",
+        "Urban Comics",
+        "Ediciones Zinco",
+        "ECC Ediciones",
+        "Murray Comics",
+        "Planeta DeAgostini",
+    }
+)
 
 
 class ComicVineImporter(BaseImporter):
@@ -106,9 +108,9 @@ class ComicVineImporter(BaseImporter):
         self.add_universes = False
         self.series_universes: list[int] = []
         self.role_list: list[GenericItem] | None = None
-        self.ignore_characters: List[int] = []
-        self.ignore_teams: List[int] = []
-        self.ignore_creators: List[int] = []
+        self.ignore_characters: set[int] = set()
+        self.ignore_teams: set[int] = set()
+        self.ignore_creators: set[int] = set()
 
     @staticmethod
     def fix_cover_date(orig_date: datetime.date) -> datetime.date:
@@ -497,7 +499,7 @@ class ComicVineImporter(BaseImporter):
         if questionary.confirm(
             "Do you want to ignore this creator during the rest of this session?"
         ).ask():
-            self.ignore_creators.append(creator.id)
+            self.ignore_creators.add(creator.id)
         return None
 
     def _create_creator_list(self, creators: List[GenericEntry]) -> List[int]:
@@ -672,7 +674,7 @@ class ComicVineImporter(BaseImporter):
         if questionary.confirm(
             "Do you want to ignore this team during the rest of this session?"
         ).ask():
-            self.ignore_teams.append(team.id)
+            self.ignore_teams.add(team.id)
         return None
 
     def _create_team_list(self, teams: List[GenericEntry]) -> List[int]:
@@ -785,7 +787,7 @@ class ComicVineImporter(BaseImporter):
         if questionary.confirm(
             "Do you want to ignore this character during the rest of this session?"
         ).ask():
-            self.ignore_characters.append(character.id)
+            self.ignore_characters.add(character.id)
         return None
 
     def _create_character_list(self, characters: List[GenericEntry]) -> List[int]:

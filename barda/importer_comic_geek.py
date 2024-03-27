@@ -287,10 +287,11 @@ class GeeksImporter(BaseImporter):
         upc = self._get_upc(issue)
         sku = self._get_sku(issue)
         cover = self._get_cover(issue.cover["image"])
-        if questionary.confirm("Do you want to add characters to this issue?").ask():
-            character_lst = self._create_characters_list(issue.characters)
-        else:
-            character_lst = []
+        # if questionary.confirm("Do you want to add characters to this issue?").ask():
+        #     character_lst = self._create_characters_list(issue.characters)
+        # else:
+        #     character_lst = []
+        character_lst = []
         pages = self._get_pages(issue)
         price = self._get_price(issue)
 
@@ -321,29 +322,29 @@ class GeeksImporter(BaseImporter):
             questionary.print(
                 f"Added '{series_name} #{issue_number}' to Metron", style=Styles.SUCCESS
             )
-            if issue.variant_covers:
-                if questionary.confirm("Do you want to add variant covers for this issue?").ask():
-                    self._get_variants(resp["id"], issue)
+            # if issue.variant_covers:
+            #     if questionary.confirm("Do you want to add variant covers for this issue?").ask():
+            #         self._get_variants(resp["id"], issue)
         else:
             questionary.print(
                 f"'{series_name} #{issue_number}' already exists on Metron", style=Styles.WARNING
             )
-            if questionary.confirm("Do you want to add any variants to the existing issue?").ask():
-                issue_lst = self.metron.issues_list(
-                    {"series_id": series_id, "number": issue_number}
-                )
-                if not issue_lst:
-                    return
-
-                if len(issue_lst) < 2:
-                    self._get_variants(issue_lst[0].id, issue)
-                else:
-                    issue_choices = self._create_issue_choices(issue_lst)
-                    metron_issue = questionary.select(
-                        "What issue should be used?", choices=issue_choices
-                    ).ask()
-                    if metron_issue:
-                        self._get_variants(metron_issue.id, issue)
+            # if questionary.confirm("Do you want to add any variants to the existing issue?").ask():
+            #     issue_lst = self.metron.issues_list(
+            #         {"series_id": series_id, "number": issue_number}
+            #     )
+            #     if not issue_lst:
+            #         return
+            #
+            #     if len(issue_lst) < 2:
+            #         self._get_variants(issue_lst[0].id, issue)
+            #     else:
+            #         issue_choices = self._create_issue_choices(issue_lst)
+            #         metron_issue = questionary.select(
+            #             "What issue should be used?", choices=issue_choices
+            #         ).ask()
+            #         if metron_issue:
+            #             self._get_variants(metron_issue.id, issue)
 
     def run(self) -> None:
         self._setup_client()

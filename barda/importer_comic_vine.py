@@ -12,10 +12,10 @@ from mokkari.schemas.generic import GenericItem
 from mokkari.schemas.issue import Issue as MetronIssue
 from mokkari.schemas.series import BaseSeries
 from simyan.comicvine import Comicvine as CV
-from simyan.comicvine import Issue as CV_Issue
-from simyan.comicvine import VolumeEntry
 from simyan.exceptions import ServiceError
 from simyan.schemas.generic_entries import CreatorEntry, GenericEntry
+from simyan.schemas.issue import Issue as CV_Issue
+from simyan.schemas.volume import VolumeEntry
 from simyan.sqlite_cache import SQLiteCache
 
 from barda.exceptions import ApiError

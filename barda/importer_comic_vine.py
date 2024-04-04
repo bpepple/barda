@@ -1084,6 +1084,10 @@ class ComicVineImporter(BaseImporter):
         if not met.cv_id:
             data["cv_id"] = cv.id
 
+        if cv.image.original_url and met.image is None:
+            img = self._get_image(cv.image.original_url, ImageType.Cover)
+            data["image"] = img
+
         if not data:
             return False
 

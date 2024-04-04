@@ -71,6 +71,7 @@ class PostData:
                         headers=self.header,
                         auth=(self.user, self.passwd),
                         data=data,
+                        files=files,
                     )
         except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             LOGGER.error(f"Connection error: {repr(e)}")

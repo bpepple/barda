@@ -1,7 +1,6 @@
 """Logging module"""
 
 import logging
-from logging import basicConfig
 
 from barda.utils import get_settings_folder
 
@@ -15,4 +14,4 @@ def init_logging():
     log_path = get_settings_folder() / "barda.log"
     handler = logging.FileHandler(str(log_path))
     handler.setFormatter(formatter)
-    basicConfig(level=logging.WARNING, handlers=[handler])
+    logging.basicConfig(level=logging.WARNING, handlers=[handler])

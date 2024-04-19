@@ -110,6 +110,21 @@ class Ignore_Creators(Enum):
     Edgar_Rice_Burroughs = 58037
     William_Hanna = 57744
     Joseph_Barbera = 57745
+    Meredith_Wallace = 74560
+    Emily_Miller = 72686
+    Ron_Richards = 72687
+    David_Brothers = 72804
+    Emilio_Bautista = 72807
+    Tyler_Shainline = 72682
+    Dom_Ramos = 77327
+    Karen_Hoyt = 77326
+    Jessica_Ambriz = 76661
+    Kat_Salazar = 74724
+    Jeremy_Sullivan = 73964
+    Jonathan_Chan = 72683
+    Monica_Garcia = 72681
+    Jenna_Savage = 72176
+    Branwyn_Bigglestone = 62798
 
 
 @unique

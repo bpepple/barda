@@ -1,5 +1,6 @@
 import sqlite3
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
@@ -29,7 +30,11 @@ class DB:
 
     @staticmethod
     def _get_db() -> sqlite3.Connection:
-        return sqlite3.connect("/home/bpepple/.cache/barda/gcd.db")
+        gcd_fn = Path("/home/bpepple/.cache/barda/gcd.db")
+        if not gcd_fn.exists():
+            raise FileNotFoundError
+
+        return sqlite3.connect(gcd_fn)
 
     def get_series_list(self, name: str) -> list[any]:  # sourcery skip: class-extract-method
         q = (

@@ -39,7 +39,7 @@ class DB:
     def get_series_list(self, name: str) -> list[any]:  # sourcery skip: class-extract-method
         q = (
             "SELECT id, name, year_began, issue_count, publishing_format "
-            "from gcd_series WHERE country_id=225 AND name=? "
+            "from gcd_series WHERE country_id=225 AND name=? COLLATE NOCASE "
             # "AND NOT publishing_format='collected edition' "
             # "AND NOT publishing_format='Collected Series'"
             # "AND NOT publishing_format='collected editions' "

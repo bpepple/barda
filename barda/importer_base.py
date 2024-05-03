@@ -326,7 +326,7 @@ class BaseImporter:
     def _determine_series_year_end(series_type_id: int) -> int | None:
         return (
             int(questionary.text("What year did this series end in?", validate=YearValidator).ask())
-            if series_type_id in {11, 2}
+            if series_type_id in {11, 2, 12}  # Limited, Cancelled, and Digital Chapters
             else None
         )
 

@@ -1088,6 +1088,9 @@ class ComicVineImporter(BaseImporter):
             img = self._get_image(cv.image.original_url, ImageType.Cover)
             data["image"] = img
 
+        if self.series_universes:
+            data["universes"] = self.series_universes
+
         if not data:
             return False
 

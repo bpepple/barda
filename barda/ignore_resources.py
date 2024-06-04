@@ -125,6 +125,10 @@ class Ignore_Creators(Enum):
     Monica_Garcia = 72681
     Jenna_Savage = 72176
     Branwyn_Bigglestone = 62798
+    Drew_Gill = 62799
+    Jaemie_Dudas = 73610
+    Jamie_Parreno = 72685
+    Jennifer_DeGuzman = 66638
 
 
 @unique

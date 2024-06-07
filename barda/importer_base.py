@@ -49,6 +49,7 @@ class BaseImporter:
             config.metron_user, config.metron_password, user_agent=f"Barda/{__version__}"
         )
         self.series_type: GenericItem | None = None
+        self.publishers: list[BaseResource] = []
         self.universes: list[BaseResource] = []
         self.conversions = ResourceKeys(str(config.conversions))
         # List of GCD issues not on Metron.
@@ -113,9 +114,10 @@ class BaseImporter:
     # Publisher #
     #############
     def _choose_publisher(self) -> int:
-        pub_lst = self.metron.publishers_list()
+        if not self.publishers:
+            self.publishers = self.metron.publishers_list()
         choices = []
-        for p in pub_lst:
+        for p in self.publishers:
             choice = questionary.Choice(title=p.name, value=p.id)
             choices.append(choice)
         # TODO: Provide option to add a Publisher

@@ -4,7 +4,6 @@ import questionary
 
 from barda.importer_comic_geek import GeeksImporter
 from barda.importer_comic_vine import ComicVineImporter
-from barda.importer_marvel import MarvelNewReleases
 from barda.logging import init_logging
 from barda.resource_keys import ResourceKeys, Resources
 from barda.settings import BardaSettings
@@ -23,7 +22,6 @@ class TaskType(Enum):
     GCD_Update_Issue = auto()
     Update_Resource = auto()
     Delete_Resource = auto()
-    Marvel_Releases = auto()
 
     def __str__(self) -> str:
         return self.name.replace("_", " ")
@@ -120,32 +118,12 @@ class Runner:
             return True
         return False
 
-    def _has_marvel_credentials(self) -> bool:
-        return bool(self.config.marvel_public_key and self.config.marvel_private_key)
-
-    def _get_marvel_credentials(self) -> bool:
-        answers = questionary.form(
-            public=questionary.text("What is your public key for the Marvel API?"),
-            private=questionary.text("What is your private key for the Marvel API?"),
-            save=questionary.confirm("Would you like to save your Marvel credenttials?"),
-        ).ask()
-        if answers["public"] and answers["private"]:
-            self.config.marvel_public_key = answers["public"]
-            self.config.marvel_private_key = answers["private"]
-            if answers["save"]:
-                self.config.save()
-            return True
-        return False
-
     def run(self) -> None:
         if not self._has_metron_credentials() and not self._get_metron_credentials():
             questionary.print("No Metron credentials provided. Exiting...")
             exit(0)
         if not self._has_cv_credentials() and not self._get_cv_credentials():
             questionary.print("No Comic Vine credentials were provided. Exiting...")
-            exit(0)
-        if not self._has_marvel_credentials() and not self._get_marvel_credentials():
-            questionary.print("No Marvel credentials provided. Exiting...")
             exit(0)
 
         # Start logging
@@ -169,9 +147,6 @@ class Runner:
                 self._update_resource_key()
             case TaskType.Delete_Resource.value:
                 self._delete_resource_key()
-            case TaskType.Marvel_Releases.value:
-                with MarvelNewReleases(self.config) as marvel_obj:
-                    marvel_obj.run()
             case TaskType.LOCG_Import_Issue.value:
                 with GeeksImporter(self.config) as locg:
                     locg.run()

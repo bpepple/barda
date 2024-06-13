@@ -383,22 +383,22 @@ class ComicVineImporter(BaseImporter):
         return roles
 
     def _create_credits_list(
-        self, issue_id: int, cover_date: datetime.date, credits: List[CreatorEntry]
+        self, issue_id: int, cover_date: datetime.date, credits_: List[CreatorEntry]
     ) -> List:
         LOGGER.debug("Entering create_credits_list()...")
         credits_lst = []
-        for i in credits:
-            if self._ignore_resource(Ignore_Creators, i.id):
+        for credit in credits_:
+            if self._ignore_resource(Ignore_Creators, credit.id):
                 continue
-            if self.ignore_creators and i.id in self.ignore_creators:
+            if self.ignore_creators and credit.id in self.ignore_creators:
                 continue
-            person = GenericEntry(id=i.id, name=i.name, api_detail_url="")
-            creator_id = self.conversions.get_cv(Resources.Creator.value, i.id)
+            person = GenericEntry(id=credit.id, name=credit.name, api_detail_url="")
+            creator_id = self.conversions.get_cv(Resources.Creator.value, credit.id)
             if creator_id is None:
                 creator_id = self._search_for_creator(person)
             if creator_id is None:
                 continue
-            role_lst = self._create_role_list(i, cover_date)
+            role_lst = self._create_role_list(credit, cover_date)
             data = {"issue": issue_id, "creator": creator_id, "role": role_lst}
             credits_lst.append(data)
 

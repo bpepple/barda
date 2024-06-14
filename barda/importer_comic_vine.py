@@ -916,16 +916,15 @@ class ComicVineImporter(BaseImporter):
 
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)
+        elif questionary.confirm(
+            f"'{cv_issue.number}' doesn't have a cover date. Do you want to add one?"
+        ).ask():
+            cover_date = questionary.text(
+                "What should the cover date be?", validate=DateValidator
+            ).ask()
         else:
-            if questionary.confirm(
-                f"'{cv_issue.number}' doesn't have a cover date. Do you want to add one?"
-            ).ask():
-                cover_date = questionary.text(
-                    "What should the cover date be?", validate=DateValidator
-                ).ask()
-            else:
-                LOGGER.error(f"No Cover date: {cv_issue}")
-                exit(0)
+            LOGGER.error(f"No Cover date: {cv_issue}")
+            exit(0)
         if gcd_stories is not None and len(gcd_stories) > 0:
             stories = gcd_stories
         else:

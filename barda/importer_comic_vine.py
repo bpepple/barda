@@ -62,7 +62,6 @@ BAD_PUBLISHERS = frozenset(
         "Editoriale Corno",
         "Editions Héritage",
         "Editorial Muchnik",
-        "Panini España",
         "Del Rey",
         "Cosplay Comics",
         "Eternity",

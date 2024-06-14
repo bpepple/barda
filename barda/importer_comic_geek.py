@@ -51,12 +51,10 @@ class GeeksImporter(BaseImporter):
     @staticmethod
     def _variant_name(name: str) -> str:
         split = name.split(" ")
-        begin = None
-        for idx, item in enumerate(split):
-            if item.lower().startswith("#"):
-                begin = idx + 1
-                break
-
+        begin = next(
+            (idx + 1 for idx, item in enumerate(split) if item.lower().startswith("#")),
+            None,
+        )
         if begin is not None:
             new_name = " ".join(split[begin:])
             bad_name = " Card Stock"

@@ -279,7 +279,7 @@ class GeeksImporter(BaseImporter):
         if series_id is None:
             questionary.print(f"Failed to find: {series_name}.", style=Styles.WARNING)
             return
-        issue_number = issue.number if issue.number else "1"
+        issue_number = issue.number or "1"
         store_date = self._get_store_date(issue.store_date)
         cover_date = self._get_cover_date(series_id, store_date)
         upc = self._get_upc(issue)

@@ -161,10 +161,7 @@ class BaseImporter:
 
     @staticmethod
     def _create_metron_reprint_lst(reprint_lst: list[Reprint]) -> list[int]:
-        new_lst = []
-        for i in reprint_lst:
-            new_lst.append(i.id)
-        return new_lst
+        return [i.id for i in reprint_lst]
 
     @staticmethod
     def _check_reprints_list(

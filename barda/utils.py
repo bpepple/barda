@@ -40,8 +40,7 @@ def clean_desc(txt: str) -> str:
                 or item.lower().startswith("synopsis")
             ):
                 return "\n\n".join(split_txt[:idx]) if split_len > 2 else split_txt[0]
-        else:
-            return txt
+        return txt
     return txt
 
 

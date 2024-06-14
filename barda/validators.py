@@ -29,4 +29,6 @@ class DateValidator(Validator):
         try:
             date.fromisoformat(document.text)
         except ValueError as e:
-            raise ValidationError(message=f"Invalid date: {e}", cursor_position=len(document.text))
+            raise ValidationError(
+                message=f"Invalid date: {e}", cursor_position=len(document.text)
+            ) from e

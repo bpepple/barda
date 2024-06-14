@@ -6,10 +6,10 @@ from questionary import ValidationError, Validator
 
 class YearValidator(Validator):
     def validate(self, document: Document) -> None:
-        YEAR_LENGTH = 4
-        if not document.text.isnumeric() or len(document.text) != YEAR_LENGTH:
+        year_length = 4
+        if not document.text.isnumeric() or len(document.text) != year_length:
             raise ValidationError(
-                message=f"Value must be numeric and have a length of {YEAR_LENGTH}",
+                message=f"Value must be numeric and have a length of {year_length}",
                 cursor_position=len(document.text),
             )
         return super().validate(document)

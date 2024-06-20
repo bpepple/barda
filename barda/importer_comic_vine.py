@@ -1134,14 +1134,15 @@ class ComicVineImporter(BaseImporter):
 
         questionary.print(f"Going to add {len(i_list)} issues to Metron.", style=Styles.TITLE)
         for i in i_list:
-            if not update_issue:
-                # See if the issue is already on Metron.
-                if self.metron.issues_list(params={"series_id": series_id, "number": i.number}):
-                    questionary.print(
-                        f"{series.name} #{i.number} already exists. Skipping...",
-                        style=Styles.WARNING,
-                    )
-                    continue
+            # See if the issue is already on Metron.
+            if not update_issue and self.metron.issues_list(
+                params={"series_id": series_id, "number": i.number}
+            ):
+                questionary.print(
+                    f"{series.name} #{i.number} already exists. Skipping...",
+                    style=Styles.WARNING,
+                )
+                continue
             try:
                 cv_issue = self.cv.get_issue(i.id)
             except (ServiceError, requests.JSONDecodeError):

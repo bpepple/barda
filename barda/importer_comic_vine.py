@@ -1027,10 +1027,7 @@ class ComicVineImporter(BaseImporter):
         if self.add_characters:
             if cv.characters:
                 characters_lst = self._create_character_list(cv.characters)
-                if met.characters:
-                    metron_lst = [item.id for item in met.characters]
-                else:
-                    metron_lst = []
+                metron_lst = [item.id for item in met.characters] if met.characters else []
                 for char in characters_lst:
                     if char not in metron_lst:
                         metron_lst.append(char)
@@ -1038,10 +1035,7 @@ class ComicVineImporter(BaseImporter):
                     data["characters"] = metron_lst
             if cv.teams:
                 teams_lst = self._create_team_list(cv.teams)
-                if met.teams:
-                    metron_lst = [item.id for item in met.teams]
-                else:
-                    metron_lst = []
+                metron_lst = [item.id for item in met.teams] if met.teams else []
                 for team in teams_lst:
                     if team not in metron_lst:
                         metron_lst.append(team)
@@ -1049,10 +1043,7 @@ class ComicVineImporter(BaseImporter):
                     data["teams"] = teams_lst
         if cv.story_arcs:
             arcs_lst = self._create_arc_list(cv.story_arcs)
-            if met.arcs:
-                metron_lst = [item.id for item in met.arcs]
-            else:
-                metron_lst = []
+            metron_lst = [item.id for item in met.arcs] if met.arcs else []
             for arc in arcs_lst:
                 if arc not in metron_lst:
                     metron_lst.append(arc)

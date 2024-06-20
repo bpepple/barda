@@ -1093,7 +1093,7 @@ class ComicVineImporter(BaseImporter):
             return False
         return True
 
-    def run(self) -> None:  # sourcery skip: low-code-quality
+    def run(self) -> None:  # sourcery skip: low-code-quality # noqa: C901
         series = self._what_series()
         if series is None:
             questionary.print("Nothing found", style=Styles.WARNING)
@@ -1132,8 +1132,16 @@ class ComicVineImporter(BaseImporter):
             "Do you want to update existing issues in Metron?"
         ).ask()
 
+        if update_issue:
+            start_number = int(questionary.text("What is the starting number?").ask())
+        else:
+            start_number = 0
+
         questionary.print(f"Going to add {len(i_list)} issues to Metron.", style=Styles.TITLE)
         for i in i_list:
+            if update_issue and int(i.number) < start_number:
+                questionary.print(f"Skipping '{series.name} #{i.number}'")
+                continue
             # See if the issue is already on Metron.
             if not update_issue and self.metron.issues_list(
                 params={"series_id": series_id, "number": i.number}

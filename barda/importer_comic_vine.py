@@ -1027,28 +1027,23 @@ class ComicVineImporter(BaseImporter):
         if self.add_characters:
             if cv.characters:
                 characters_lst = self._create_character_list(cv.characters)
-                metron_lst = [item.id for item in met.characters] if met.characters else []
-                for char in characters_lst:
-                    if char not in metron_lst:
-                        metron_lst.append(char)
-                if metron_lst:
-                    data["characters"] = metron_lst
+                metron_set = {item.id for item in met.characters} if met.characters else set()
+                metron_set.update(characters_lst)
+                if metron_set:
+                    data["characters"] = list(metron_set)
             if cv.teams:
                 teams_lst = self._create_team_list(cv.teams)
                 metron_lst = [item.id for item in met.teams] if met.teams else []
-                for team in teams_lst:
-                    if team not in metron_lst:
-                        metron_lst.append(team)
+                metron_lst_set = set(metron_lst)
+                metron_lst.extend(team for team in teams_lst if team not in metron_lst_set)
                 if metron_lst:
                     data["teams"] = teams_lst
         if cv.story_arcs:
             arcs_lst = self._create_arc_list(cv.story_arcs)
-            metron_lst = [item.id for item in met.arcs] if met.arcs else []
-            for arc in arcs_lst:
-                if arc not in metron_lst:
-                    metron_lst.append(arc)
-            if metron_lst:
-                data["arcs"] = metron_lst
+            metron_set = {item.id for item in met.arcs} if met.arcs else set()
+            metron_set.update(arcs_lst)
+            if metron_set:
+                data["arcs"] = list(metron_set)
 
         if cv.description and not met.desc:  # type: ignore
             desc = remove_overview_text(cleanup_html(cv.description, True))

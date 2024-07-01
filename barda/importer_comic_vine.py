@@ -925,10 +925,7 @@ class ComicVineImporter(BaseImporter):
         else:
             LOGGER.error(f"No Cover date: {cv_issue}")
             exit(0)
-        if gcd_stories is not None and len(gcd_stories) > 0:
-            stories = gcd_stories
-        else:
-            stories = self._fix_title_data(cv_issue.name)
+        stories = gcd_stories or self._fix_title_data(cv_issue.name)
 
         LOGGER.debug(f"Stories is List: {isinstance(stories, List)}")
 

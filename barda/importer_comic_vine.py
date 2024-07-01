@@ -908,13 +908,13 @@ class ComicVineImporter(BaseImporter):
     def _create_issue(self, series_id: int, cv_issue: CV_Issue, gcd_series_id):
         def get_cover_date(issue: CV_Issue) -> str:
             """
-            Prompts the user to add a cover date if it is missing for the given issue.
+            Prompts the user to add a cover date if it is missing for the given Comic Vine issue.
 
             If the user confirms to add a cover date, prompts for the cover date input; otherwise, logs an error and
             exits the program.
 
             Args:
-                issue: The issue for which the cover date is being added.
+                issue: The Comic Vine issue for which the cover date is being added.
 
             Returns:
                 str: The cover date input by the user.

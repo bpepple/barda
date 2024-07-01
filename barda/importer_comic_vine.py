@@ -940,16 +940,10 @@ class ComicVineImporter(BaseImporter):
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
         universe_lst = self.series_universes
         img = self._get_image(cv_issue.image.original_url, ImageType.Cover)
-        if gcd is not None:
-            upc = gcd.barcode
-            price = gcd.price
-            pages = gcd.pages
-            rating = gcd.rating
-        else:
-            upc = None
-            price = None
-            pages = None
-            rating = Rating.Unknown.value
+        upc = gcd.barcode if gcd is not None else None
+        price = gcd.price if gcd is not None else None
+        pages = gcd.pages if gcd is not None else None
+        rating = gcd.rating if gcd is not None else Rating.Unknown.value
 
         gcd_reprints_lst = self.get_gcd_reprints(gcd.id) if gcd is not None else None
         reprints_lst = (

@@ -1,4 +1,5 @@
 """Utility to create an argument parser"""
+
 import argparse
 
 from barda import __version__

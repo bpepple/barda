@@ -5,6 +5,7 @@ This module provides the following classes:
 
 - ResourceKeys
 """
+
 import sqlite3
 from enum import Enum, unique
 from typing import Any

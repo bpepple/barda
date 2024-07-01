@@ -1,4 +1,5 @@
 """Cli for Barda."""
+
 from argparse import Namespace
 
 from barda.options import make_parser

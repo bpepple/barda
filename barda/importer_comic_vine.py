@@ -906,30 +906,41 @@ class ComicVineImporter(BaseImporter):
     # Issue #
     #########
     def _create_issue(self, series_id: int, cv_issue: CV_Issue, gcd_series_id):
+        def get_cover_date(issue: CV_Issue) -> str:
+            """
+            Prompts the user to add a cover date if it is missing for the given Comic Vine issue.
+
+            If the user confirms to add a cover date, prompts for the cover date input; otherwise, logs an error and
+            exits the program.
+
+            Args:
+                issue: The Comic Vine issue for which the cover date is being added.
+
+            Returns:
+                str: The cover date input by the user.
+            """
+
+            if questionary.confirm(
+                f"'{issue.number}' doesn't have a cover date. Do you want to add one?"
+            ).ask():
+                return questionary.text(
+                    "What should the cover date be?", validate=DateValidator
+                ).ask()
+            LOGGER.error(f"No Cover date: {issue}")
+            exit(0)
+
+        gcd = None
         gcd_stories = None
         if cv_issue.number:
             gcd = self._get_gcd_issue(gcd_series_id, cv_issue.number)
-            if gcd is not None:
-                gcd_stories = self._get_gcd_stories(gcd.id)
-        else:
-            gcd = None
+            gcd_stories = self._get_gcd_stories(gcd.id) if gcd else None
 
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)
-        elif questionary.confirm(
-            f"'{cv_issue.number}' doesn't have a cover date. Do you want to add one?"
-        ).ask():
-            cover_date = questionary.text(
-                "What should the cover date be?", validate=DateValidator
-            ).ask()
         else:
-            LOGGER.error(f"No Cover date: {cv_issue}")
-            exit(0)
-        if gcd_stories is not None and len(gcd_stories) > 0:
-            stories = gcd_stories
-        else:
-            stories = self._fix_title_data(cv_issue.name)
+            cover_date = get_cover_date(cv_issue)
 
+        stories = gcd_stories or self._fix_title_data(cv_issue.name)
         LOGGER.debug(f"Stories is List: {isinstance(stories, List)}")
 
         cleaned_desc = clean_desc(remove_overview_text(cleanup_html(cv_issue.description, True)))
@@ -940,16 +951,10 @@ class ComicVineImporter(BaseImporter):
         arc_lst = self._create_arc_list(cv_issue.story_arcs)
         universe_lst = self.series_universes
         img = self._get_image(cv_issue.image.original_url, ImageType.Cover)
-        if gcd is not None:
-            upc = gcd.barcode
-            price = gcd.price
-            pages = gcd.pages
-            rating = gcd.rating
-        else:
-            upc = None
-            price = None
-            pages = None
-            rating = Rating.Unknown.value
+        upc = gcd.barcode if gcd is not None else None
+        price = gcd.price if gcd is not None else None
+        pages = gcd.pages if gcd is not None else None
+        rating = gcd.rating if gcd is not None else Rating.Unknown.value
 
         gcd_reprints_lst = self.get_gcd_reprints(gcd.id) if gcd is not None else None
         reprints_lst = (
@@ -1027,28 +1032,23 @@ class ComicVineImporter(BaseImporter):
         if self.add_characters:
             if cv.characters:
                 characters_lst = self._create_character_list(cv.characters)
-                metron_lst = [item.id for item in met.characters] if met.characters else []
-                for char in characters_lst:
-                    if char not in metron_lst:
-                        metron_lst.append(char)
-                if metron_lst:
-                    data["characters"] = metron_lst
+                metron_set = {item.id for item in met.characters} if met.characters else set()
+                metron_set.update(characters_lst)
+                if metron_set:
+                    data["characters"] = list(metron_set)
             if cv.teams:
                 teams_lst = self._create_team_list(cv.teams)
                 metron_lst = [item.id for item in met.teams] if met.teams else []
-                for team in teams_lst:
-                    if team not in metron_lst:
-                        metron_lst.append(team)
+                metron_lst_set = set(metron_lst)
+                metron_lst.extend(team for team in teams_lst if team not in metron_lst_set)
                 if metron_lst:
                     data["teams"] = teams_lst
         if cv.story_arcs:
             arcs_lst = self._create_arc_list(cv.story_arcs)
-            metron_lst = [item.id for item in met.arcs] if met.arcs else []
-            for arc in arcs_lst:
-                if arc not in metron_lst:
-                    metron_lst.append(arc)
-            if metron_lst:
-                data["arcs"] = metron_lst
+            metron_set = {item.id for item in met.arcs} if met.arcs else set()
+            metron_set.update(arcs_lst)
+            if metron_set:
+                data["arcs"] = list(metron_set)
 
         if cv.description and not met.desc:  # type: ignore
             desc = remove_overview_text(cleanup_html(cv.description, True))

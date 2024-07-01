@@ -4,12 +4,12 @@ repos:
     hooks:
       - id: seed-isort-config
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
   # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 23.11.0
+    rev: 24.4.2
     hooks:
       - id: black
         # It is recommended to specify the latest version of Python
@@ -18,7 +18,7 @@ repos:
         # https://pre-commit.com/#top_level-default_language_version
         language_version: python3.12
   - repo: https://github.com/PyCQA/flake8
-    rev: 6.1.0
+    rev: 7.1.0
     hooks:
       - id: flake8
         additional_dependencies: [flake8-builtins, flake8-blind-except]

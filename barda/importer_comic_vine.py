@@ -906,13 +906,11 @@ class ComicVineImporter(BaseImporter):
     # Issue #
     #########
     def _create_issue(self, series_id: int, cv_issue: CV_Issue, gcd_series_id):
+        gcd = None
         gcd_stories = None
         if cv_issue.number:
             gcd = self._get_gcd_issue(gcd_series_id, cv_issue.number)
-            if gcd is not None:
-                gcd_stories = self._get_gcd_stories(gcd.id)
-        else:
-            gcd = None
+            gcd_stories = self._get_gcd_stories(gcd.id) if gcd else None
 
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)

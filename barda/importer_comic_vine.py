@@ -906,6 +906,29 @@ class ComicVineImporter(BaseImporter):
     # Issue #
     #########
     def _create_issue(self, series_id: int, cv_issue: CV_Issue, gcd_series_id):
+        def get_cover_date(issue: CV_Issue) -> str:
+            """
+            Prompts the user to add a cover date if it is missing for the given issue.
+
+            If the user confirms to add a cover date, prompts for the cover date input; otherwise, logs an error and
+            exits the program.
+
+            Args:
+                issue: The issue for which the cover date is being added.
+
+            Returns:
+                str: The cover date input by the user.
+            """
+
+            if questionary.confirm(
+                f"'{issue.number}' doesn't have a cover date. Do you want to add one?"
+            ).ask():
+                return questionary.text(
+                    "What should the cover date be?", validate=DateValidator
+                ).ask()
+            LOGGER.error(f"No Cover date: {issue}")
+            exit(0)
+
         gcd = None
         gcd_stories = None
         if cv_issue.number:
@@ -914,15 +937,8 @@ class ComicVineImporter(BaseImporter):
 
         if cv_issue.cover_date:
             cover_date = self.fix_cover_date(cv_issue.cover_date)
-        elif questionary.confirm(
-            f"'{cv_issue.number}' doesn't have a cover date. Do you want to add one?"
-        ).ask():
-            cover_date = questionary.text(
-                "What should the cover date be?", validate=DateValidator
-            ).ask()
         else:
-            LOGGER.error(f"No Cover date: {cv_issue}")
-            exit(0)
+            cover_date = get_cover_date(cv_issue)
 
         stories = gcd_stories or self._fix_title_data(cv_issue.name)
         LOGGER.debug(f"Stories is List: {isinstance(stories, List)}")
